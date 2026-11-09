@@ -59,6 +59,7 @@ async function main() {
     await seedValidatedRecruiter();
     await seedTraining();
     await seedImmigration();
+    await seedServices();
   }
 }
 
@@ -576,6 +577,30 @@ async function seedImmigration() {
   }
 
   console.log("✓ Seeded 1 immigration case with 9-task checklist.");
+}
+
+/**
+ * Seed a catalog of paid services (formations, accompagnement, abonnements).
+ */
+async function seedServices() {
+  if (await db.service.count() > 0) {
+    console.log("✓ Services already exist — skipping services seed.");
+    return;
+  }
+
+  const services = [
+    { name: "Formation Italien A1 — Débutant", description: "Accès complet au parcours A1 : 5 modules, 42 leçons, vidéos, exercices et examen.", category: "formation", price: 49, currency: "EUR", durationLabel: "3 mois" },
+    { name: "Formation Italien A2 — Élémentaire", description: "Parcours A2 complet : vie pratique, vocabulaire professionnel de base.", category: "formation", price: 59, currency: "EUR", durationLabel: "3 mois" },
+    { name: "Formation Italien B1 — Intermédiaire", description: "Maîtrisez l'italien professionnel : entretiens, contrats, communication en entreprise.", category: "formation", price: 79, currency: "EUR", durationLabel: "4 mois" },
+    { name: "Pack Accompagnement Immigration", description: "Accompagnement complet : préparation dossier, suivi visa, préparation au départ.", category: "accompagnement", price: 199, currency: "EUR", durationLabel: "Until departure" },
+    { name: "Abonnement Recruteur — Premium", description: "Publications d'offres illimitées, accès CVthèque, candidatures illimitées.", category: "abonnement", price: 99, currency: "EUR", durationLabel: "1 mois" },
+    { name: "Session Coaching Entretien", description: "1h de coaching individuel pour préparer vos entretiens en italien.", category: "accompagnement", price: 39, currency: "EUR", durationLabel: "1 session" },
+  ];
+
+  for (const s of services) {
+    await db.service.create({ data: s });
+  }
+  console.log(`✓ Seeded ${services.length} services (catalogue des prestations).`);
 }
 
 main()

@@ -39,6 +39,8 @@ import { CandidateMyTraining } from "../dashboard/candidate-my-training";
 import { CandidateExams } from "../dashboard/candidate-exams";
 import { CandidateCertificates } from "../dashboard/candidate-certificates";
 import { CandidateImmigration } from "../dashboard/candidate-immigration";
+import { CandidatePayments } from "../dashboard/candidate-payments";
+import { CandidateNotifications } from "../dashboard/candidate-notifications";
 import { AgentShell, type AgentSection } from "../dashboard/agent-shell";
 import { AgentOverview } from "../dashboard/agent-overview";
 import { AgentCases } from "../dashboard/agent-cases";
@@ -47,11 +49,12 @@ import { AgentDeadlines } from "../dashboard/agent-deadlines";
 import { AgentCandidates } from "../dashboard/agent-candidates";
 import { AgentSettings } from "../dashboard/agent-settings";
 import { AdminImmigration } from "../dashboard/admin-immigration";
+import { AdminPayments } from "../dashboard/admin-payments";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
-  "training", "exams", "certificates", "immigration", "messages",
-  "notifications", "settings",
+  "training", "exams", "certificates", "immigration", "payments",
+  "messages", "notifications", "settings",
 ];
 
 const RECRUITER_SECTIONS: RecruiterSection[] = [
@@ -135,6 +138,10 @@ export function DashboardPage() {
           return <CandidateCertificates />;
         case "immigration":
           return <CandidateImmigration />;
+        case "payments":
+          return <CandidatePayments />;
+        case "notifications":
+          return <CandidateNotifications />;
         case "settings":
           return <CandidateSettings />;
         default:
@@ -231,6 +238,8 @@ export function DashboardPage() {
           return <AdminAudit />;
         case "immigration":
           return <AdminImmigration />;
+        case "payments":
+          return <AdminPayments />;
         case "settings":
           return <AdminSettings />;
         default:

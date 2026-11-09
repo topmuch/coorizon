@@ -775,10 +775,34 @@ model Notification {
 // 25. PAYMENTS
 // =====================================================================
 
+// =====================================================================
+// 25b. SERVICES (catalogue des prestations payantes)
+// =====================================================================
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String   // "formation" | "accompagnement" | "abonnement" | "autre"
+  price       Float
+  currency    String   @default("EUR")
+  durationLabel String? // e.g. "3 mois", "1 session"
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments    Payment[]
+
+  @@index([category])
+  @@index([isPublished])
+}
+
 model Payment {
   id              String        @id @default(cuid())
   userId          String
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId       String?
+  service         Service?      @relation(fields: [serviceId], references: [id])
   amount          Float
   currency        String        @default("EUR")
   description     String
@@ -795,6 +819,7 @@ model Payment {
 
   @@index([userId])
   @@index([status])
+  @@index([serviceId])
 }
 
 // =====================================================================

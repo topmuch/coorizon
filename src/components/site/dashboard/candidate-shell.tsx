@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   Award,
   Plane,
+  CreditCard,
   MessageSquare,
   Bell,
   Settings,
@@ -39,6 +40,7 @@ export type DashboardSection =
   | "exams"
   | "certificates"
   | "immigration"
+  | "payments"
   | "messages"
   | "notifications"
   | "settings";
@@ -60,9 +62,10 @@ export const candidateNav: NavSection[] = [
   { id: "training", label: "Mes formations", icon: GraduationCap, lot: "LOT 6" },
   { id: "exams", label: "Mes examens", icon: ClipboardCheck, lot: "LOT 6" },
   { id: "certificates", label: "Mes certificats", icon: Award, lot: "LOT 6" },
-  { id: "immigration", label: "Mon dossier administratif", icon: Plane, lot: "LOT 7" },
-  { id: "messages", label: "Messagerie", icon: MessageSquare, lot: "LOT 8" },
-  { id: "notifications", label: "Notifications", icon: Bell, lot: "LOT 8" },
+  { id: "immigration", label: "Mon dossier administratif", icon: Plane },
+  { id: "payments", label: "Mes paiements", icon: CreditCard },
+  { id: "messages", label: "Messagerie", icon: MessageSquare, lot: "LOT 9" },
+  { id: "notifications", label: "Notifications", icon: Bell },
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
 
