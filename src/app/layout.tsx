@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "COORIZON" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/coorizon-logo.jpg",
   },
   openGraph: {
     title: "COORIZON — Votre avenir professionnel commence ici",

@@ -69,9 +69,9 @@ interface AdminStats {
 // ─── Role metadata ─────────────────────────────────────────────────────────
 
 const ROLE_META: { key: Role; label: string; color: string }[] = [
-  { key: "Candidate", label: ROLE_LABELS.Candidate, color: "#2563A6" },
-  { key: "Recruiter", label: ROLE_LABELS.Recruiter, color: "#17365D" },
-  { key: "Trainer", label: ROLE_LABELS.Trainer, color: "#15966A" },
+  { key: "Candidate", label: ROLE_LABELS.Candidate, color: "#1E8236" },
+  { key: "Recruiter", label: ROLE_LABELS.Recruiter, color: "#0D3B1A" },
+  { key: "Trainer", label: ROLE_LABELS.Trainer, color: "#D4A017" },
   { key: "RecruitmentAgent", label: ROLE_LABELS.RecruitmentAgent, color: "#7c3aed" },
   { key: "ImmigrationAgent", label: ROLE_LABELS.ImmigrationAgent, color: "#0891b2" },
   { key: "Admin", label: ROLE_LABELS.Admin, color: "#d92d35" },

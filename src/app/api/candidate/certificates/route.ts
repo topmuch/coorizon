@@ -237,7 +237,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       qrCodeUrl = await QRCode.toDataURL(verificationUrl, {
         margin: 1,
         width: 240,
-        color: { dark: "#17365d", light: "#ffffff" },
+        color: { dark: "#0d3b1a", light: "#ffffff" },
       });
     } catch {
       // QR generation is best-effort — the certificate is still valid

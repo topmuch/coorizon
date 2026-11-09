@@ -83,9 +83,9 @@ interface AdminStats {
 // Brand palette (matches globals.css tokens)
 // ---------------------------------------------------------------------------
 
-const BRAND = "#2563A6";
-const BRAND_GREEN = "#15966A";
-const NAVY = "#17365D";
+const BRAND = "#1E8236";
+const BRAND_GREEN = "#D4A017";
+const NAVY = "#0D3B1A";
 const ITALIAN_RED = "#D92D35";
 
 // ---------------------------------------------------------------------------
