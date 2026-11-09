@@ -28,6 +28,16 @@ import { AdminApplications } from "../dashboard/admin-applications";
 import { AdminCms } from "../dashboard/admin-cms";
 import { AdminAudit } from "../dashboard/admin-audit";
 import { AdminSettings } from "../dashboard/admin-settings";
+import { TrainerShell, type TrainerSection } from "../dashboard/trainer-shell";
+import { TrainerOverview } from "../dashboard/trainer-overview";
+import { TrainerCourses } from "../dashboard/trainer-courses";
+import { TrainerLessons } from "../dashboard/trainer-lessons";
+import { TrainerLearners } from "../dashboard/trainer-learners";
+import { TrainerExams } from "../dashboard/trainer-exams";
+import { TrainerSettings } from "../dashboard/trainer-settings";
+import { CandidateMyTraining } from "../dashboard/candidate-my-training";
+import { CandidateExams } from "../dashboard/candidate-exams";
+import { CandidateCertificates } from "../dashboard/candidate-certificates";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
@@ -49,6 +59,10 @@ const ADMIN_LOT_MAP: Record<string, string> = {
   immigration: "LOT 7 — Dossiers administratifs & immigration",
   payments: "LOT 8 — Paiements & notifications",
 };
+
+const TRAINER_SECTIONS: TrainerSection[] = [
+  "overview", "courses", "lessons", "learners", "exams", "settings",
+];
 
 const CANDIDATE_LOT_MAP: Record<string, string> = {
   training: "LOT 6 — Formation en italien",
@@ -100,6 +114,12 @@ export function DashboardPage() {
           return <CandidateJobs />;
         case "applications":
           return <CandidateApplications />;
+        case "training":
+          return <CandidateMyTraining />;
+        case "exams":
+          return <CandidateExams />;
+        case "certificates":
+          return <CandidateCertificates />;
         case "settings":
           return <CandidateSettings />;
         default:
@@ -206,7 +226,50 @@ export function DashboardPage() {
     );
   }
 
-  // ── Other roles (Trainer, Agents) — placeholder until later lots
+  // ── Trainer space (LOT 6) ──────────────────────────────────────────
+  if (user.role === "Trainer") {
+    if (user.status !== "Active") {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-bold text-navy">Compte indisponible</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Votre compte formateur est actuellement {user.status === "Suspended" ? "suspendu" : "en attente"}.
+              Contactez l'administration COORIZON.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const section = (params.get("section") as TrainerSection) || "overview";
+    const validSection = TRAINER_SECTIONS.includes(section) ? section : "overview";
+
+    const renderSection = () => {
+      switch (validSection) {
+        case "overview":
+          return <TrainerOverview />;
+        case "courses":
+          return <TrainerCourses />;
+        case "lessons":
+          return <TrainerLessons />;
+        case "learners":
+          return <TrainerLearners />;
+        case "exams":
+          return <TrainerExams />;
+        case "settings":
+          return <TrainerSettings />;
+        default:
+          return <TrainerOverview />;
+      }
+    };
+
+    return (
+      <TrainerShell section={validSection}>{renderSection()}</TrainerShell>
+    );
+  }
+
+  // ── Other roles (Agents) — placeholder until later lots
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <div className="max-w-md text-center">

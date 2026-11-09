@@ -57,6 +57,7 @@ async function main() {
   if (process.env.NODE_ENV !== "production") {
     await seedJobs();
     await seedValidatedRecruiter();
+    await seedTraining();
   }
 }
 
@@ -243,6 +244,261 @@ async function seedValidatedRecruiter() {
     },
   });
   console.log("✓ Validated recruiter ready: recruteur.valide@coorizon.com / Recruteur2024!");
+}
+
+/**
+ * Seed a trainer + training courses (A1, A2, B1) with modules, lessons,
+ * exercises and questions so LOT 6 is fully testable.
+ */
+async function seedTraining() {
+  if (await db.trainingCourse.count() > 0) {
+    console.log("✓ Training courses already exist — skipping training seed.");
+    return;
+  }
+
+  // Trainer user
+  const trainerEmail = "formateur@coorizon.com";
+  let trainer = await db.user.findUnique({ where: { email: trainerEmail } });
+  if (!trainer) {
+    const passwordHash = await hashPassword("Formateur2024!");
+    trainer = await db.user.create({
+      data: {
+        email: trainerEmail,
+        passwordHash,
+        role: ROLES.Trainer,
+        status: "Active",
+        isActive: true,
+        firstName: "Elena",
+        lastName: "Russo",
+        trainerProfile: { create: { bio: "Professeure d'italien certifiée.", specialties: "A1,A2,B1" } },
+      },
+    });
+    console.log("✓ Trainer created: formateur@coorizon.com / Formateur2024!");
+  }
+
+  const courses = [
+    {
+      title: "Italien débutant — Premiers pas",
+      subtitle: "Niveau A1 du CECRL",
+      description: "Apprenez les bases de l'italien : salutations, présentations, vocabulaire de la vie quotidienne et premières structures grammaticales.",
+      level: "A1" as const,
+      durationHours: 60,
+      modules: [
+        {
+          title: "Module 1 — Salutations et présentations",
+          lessons: [
+            { title: "Leçon 1 — Bonjour, ça va ?", content: "Apprenez à saluer en italien : Buongiorno, Buonasera, Ciao. Comment demander comment ça va : Come stai? Come sta?", videoUrl: "https://www.youtube.com/embed/example1", durationMin: 15 },
+            { title: "Leçon 2 — Se présenter", content: "Mi chiamo... Sono di... Piacere di conoscerti. Apprenez à donner votre nom et votre origine.", durationMin: 20 },
+            { title: "Leçon 3 — Les pronoms personnels", content: "Io, tu, lui, lei, noi, voi, loro. Conjugaison de base du verbe essere (être).", durationMin: 25 },
+          ],
+        },
+        {
+          title: "Module 2 — La vie quotidienne",
+          lessons: [
+            { title: "Leçon 4 — Les nombres 1-20", content: "Uno, due, tre... Comptez jusqu'à 20 en italien. Exercices de prononciation.", durationMin: 18 },
+            { title: "Leçon 5 — Les jours de la semaine", content: "Lunedì, martedì, mercoledì... I giorni della settimana.", durationMin: 15 },
+          ],
+        },
+      ],
+      exercise: {
+        title: "Examen A1 — Module 1",
+        type: "Exam",
+        passingScore: 70,
+        timeLimitMin: 15,
+        questions: [
+          {
+            type: "MCQ",
+            prompt: "Comment dit-on « Bonjour » en italien le matin ?",
+            options: ["Buonasera", "Buongiorno", "Buonanotte", "Arrivederci"],
+            answer: "1",
+            explanation: "Buongiorno = bonjour (le matin). Buonasera = bonsoir.",
+            points: 2,
+          },
+          {
+            type: "TrueFalse",
+            prompt: "« Come stai? » signifie « Comment t'appelles-tu ? »",
+            options: ["Vrai", "Faux"],
+            answer: "1",
+            explanation: "Faux. « Come stai? » = « Comment vas-tu ? ». « Come ti chiami? » = « Comment t'appelles-tu ? »",
+            points: 2,
+          },
+          {
+            type: "Vocabulary",
+            prompt: "Traduisez en italien : « Je m'appelle Marco »",
+            options: ["Mi chiamo Marco", "Sono Marco", "Marco sono", "Toutes ces réponses"],
+            answer: "3",
+            explanation: "« Mi chiamo Marco » et « Sono Marco » sont corrects.",
+            points: 2,
+          },
+          {
+            type: "Translation",
+            prompt: "Traduisez en français : « Piacere di conoscerti »",
+            options: ["Enchanté de te connaître", "Au revoir", "Merci beaucoup", "S'il vous plaît"],
+            answer: "0",
+            explanation: "Piacere di conoscerti = Enchanté de te connaître.",
+            points: 2,
+          },
+          {
+            type: "MCQ",
+            prompt: "Quel pronom signifie « nous » en italien ?",
+            options: ["Voi", "Noi", "Loro", "Io"],
+            answer: "1",
+            explanation: "Noi = nous. Voi = vous. Loro = ils/elles. Io = je.",
+            points: 1,
+          },
+        ],
+      },
+    },
+    {
+      title: "Italien élémentaire — Vie pratique",
+      subtitle: "Niveau A2 du CECRL",
+      description: "Communiquez dans des situations simples : achats, transports, santé et travail. Vocabulaire professionnel de base.",
+      level: "A2" as const,
+      durationHours: 70,
+      modules: [
+        {
+          title: "Module 1 — Achats et nourriture",
+          lessons: [
+            { title: "Leçon 1 — Au restaurant", content: "Vorrei... Posso avere... Il conto, per favore. Commandez au restaurant.", videoUrl: "https://www.youtube.com/embed/example2", durationMin: 22 },
+            { title: "Leçon 2 — Faire les courses", content: "Al supermercato. Vocabulaire des aliments.", durationMin: 20 },
+          ],
+        },
+      ],
+      exercise: {
+        title: "Examen A2 — Vie pratique",
+        type: "Exam",
+        passingScore: 70,
+        timeLimitMin: 20,
+        questions: [
+          {
+            type: "MCQ",
+            prompt: "Comment demande-t-on l'addition au restaurant ?",
+            options: ["Il conto, per favore", "Buon appetito", "Grazie mille", "Scusi"],
+            answer: "0",
+            explanation: "« Il conto, per favore » = l'addition s'il vous plaît.",
+            points: 2,
+          },
+          {
+            type: "Translation",
+            prompt: "Traduisez : « Vorrei un caffè »",
+            options: ["Je voudrais un café", "J'ai un café", "Le café est bon", "Où est le café"],
+            answer: "0",
+            explanation: "Vorrei = je voudrais (conditionnel de volere).",
+            points: 2,
+          },
+        ],
+      },
+    },
+    {
+      title: "Italien intermédiaire — Monde du travail",
+      subtitle: "Niveau B1 du CECRL",
+      description: "Maîtrisez l'italien professionnel : entretiens, contrats, communication en entreprise et culture du travail italienne.",
+      level: "B1" as const,
+      durationHours: 90,
+      modules: [
+        {
+          title: "Module 1 — L'entretien d'embauche",
+          lessons: [
+            { title: "Leçon 1 — Se présenter professionnellement", content: "Ho esperienza in... Lavoro come... Le competenze professionali.", videoUrl: "https://www.youtube.com/embed/example3", durationMin: 30 },
+            { title: "Leçon 2 — Questions courantes en entretien", content: "Perché vuole lavorare da noi? Quali sono i suoi punti di forza?", durationMin: 28 },
+          ],
+        },
+      ],
+      exercise: {
+        title: "Examen B1 — Monde du travail",
+        type: "Exam",
+        passingScore: 70,
+        timeLimitMin: 25,
+        questions: [
+          {
+            type: "MCQ",
+            prompt: "Comment dit-on « J'ai 5 ans d'expérience » ?",
+            options: ["Ho cinque anni di esperienza", "Sono cinque esperienze", "Faccio esperienza cinque", "Cinque anni lavoro"],
+            answer: "0",
+            explanation: "« Ho cinque anni di esperienza » = J'ai 5 ans d'expérience.",
+            points: 2,
+          },
+          {
+            type: "Translation",
+            prompt: "Traduisez : « Perché vuole lavorare da noi? »",
+            options: ["Pourquoi voulez-vous travailler chez nous ?", "Quand commencez-vous ?", "Où travaillez-vous ?", "Combien gagnez-vous ?"],
+            answer: "0",
+            explanation: "Question classique d'entretien : pourquoi voulez-vous travailler chez nous ?",
+            points: 2,
+          },
+        ],
+      },
+    },
+  ];
+
+  for (const c of courses) {
+    const course = await db.trainingCourse.create({
+      data: {
+        title: c.title,
+        subtitle: c.subtitle,
+        description: c.description,
+        level: c.level,
+        durationHours: c.durationHours,
+        isPublished: true,
+        trainerId: trainer!.id,
+      },
+    });
+
+    for (const [mi, m] of c.modules.entries()) {
+      const courseModule = await db.courseModule.create({
+        data: { courseId: course.id, title: m.title, order: mi },
+      });
+      for (const [li, l] of m.lessons.entries()) {
+        await db.lesson.create({
+          data: {
+            moduleId: courseModule.id,
+            title: l.title,
+            content: l.content,
+            videoUrl: l.videoUrl ?? null,
+            durationMin: l.durationMin,
+            order: li,
+            isPublished: true,
+          },
+        });
+      }
+    }
+
+    const ex = await db.exercise.create({
+      data: {
+        courseId: course.id,
+        title: c.exercise.title,
+        type: c.exercise.type,
+        passingScore: c.exercise.passingScore,
+        timeLimitMin: c.exercise.timeLimitMin,
+        order: 0,
+      },
+    });
+    for (const [qi, q] of c.exercise.questions.entries()) {
+      await db.question.create({
+        data: {
+          exerciseId: ex.id,
+          type: q.type as never,
+          prompt: q.prompt,
+          options: JSON.stringify(q.options),
+          answer: q.answer,
+          explanation: q.explanation,
+          points: q.points,
+          order: qi,
+        },
+      });
+    }
+  }
+  console.log("✓ Seeded 3 training courses (A1, A2, B1) with modules, lessons & exams.");
+
+  // Enroll the demo candidate in the A1 course
+  const candidate = await db.user.findFirst({ where: { role: "Candidate" } });
+  const a1Course = await db.trainingCourse.findFirst({ where: { level: "A1" } });
+  if (candidate && a1Course) {
+    await db.enrollment.create({
+      data: { candidateId: candidate.id, courseId: a1Course.id, status: "Active", progressPct: 0 },
+    });
+    console.log("✓ Demo candidate enrolled in A1 course.");
+  }
 }
 
 main()
