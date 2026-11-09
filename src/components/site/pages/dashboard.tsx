@@ -41,6 +41,7 @@ import { CandidateCertificates } from "../dashboard/candidate-certificates";
 import { CandidateImmigration } from "../dashboard/candidate-immigration";
 import { CandidatePayments } from "../dashboard/candidate-payments";
 import { CandidateNotifications } from "../dashboard/candidate-notifications";
+import { CandidateMessaging } from "../dashboard/candidate-messaging";
 import { AgentShell, type AgentSection } from "../dashboard/agent-shell";
 import { AgentOverview } from "../dashboard/agent-overview";
 import { AgentCases } from "../dashboard/agent-cases";
@@ -148,6 +149,8 @@ export function DashboardPage() {
           return <CandidatePayments />;
         case "videos":
           return <CandidateVideos />;
+        case "messages":
+          return <CandidateMessaging />;
         case "notifications":
           return <CandidateNotifications />;
         case "settings":

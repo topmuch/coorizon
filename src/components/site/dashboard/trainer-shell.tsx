@@ -19,7 +19,8 @@ import { ROLE_LABELS } from "@/lib/permissions";
 import { Logo } from "../logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export type TrainerSection =
   | "overview"
@@ -52,6 +53,7 @@ interface TrainerShellProps {
 export function TrainerShell({ section, children }: TrainerShellProps) {
   const { navigate } = useSiteRouter();
   const { user, signOut } = useSession();
+  const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const initials = user
@@ -111,6 +113,14 @@ export function TrainerShell({ section, children }: TrainerShellProps) {
       </nav>
 
       <div className="border-t p-3">
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-muted-foreground"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+          {theme === "dark" ? "Mode clair" : "Mode sombre"}
+        </Button>
         <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
           Se déconnecter

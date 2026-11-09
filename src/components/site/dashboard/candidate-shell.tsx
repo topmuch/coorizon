@@ -28,7 +28,8 @@ import { ROLE_LABELS } from "@/lib/permissions";
 import { Logo } from "../logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export type DashboardSection =
   | "overview"
@@ -61,13 +62,13 @@ export const candidateNav: NavSection[] = [
   { id: "documents", label: "Mes documents", icon: FolderOpen },
   { id: "jobs", label: "Offres d'emploi", icon: Briefcase },
   { id: "applications", label: "Mes candidatures", icon: Send },
-  { id: "training", label: "Mes formations", icon: GraduationCap, lot: "LOT 6" },
-  { id: "exams", label: "Mes examens", icon: ClipboardCheck, lot: "LOT 6" },
-  { id: "certificates", label: "Mes certificats", icon: Award, lot: "LOT 6" },
+  { id: "training", label: "Mes formations", icon: GraduationCap },
+  { id: "exams", label: "Mes examens", icon: ClipboardCheck },
+  { id: "certificates", label: "Mes certificats", icon: Award },
   { id: "immigration", label: "Mon dossier administratif", icon: Plane },
   { id: "payments", label: "Mes paiements", icon: CreditCard },
   { id: "videos", label: "Médiathèque", icon: Video },
-  { id: "messages", label: "Messagerie", icon: MessageSquare, lot: "LOT 9" },
+  { id: "messages", label: "Messagerie", icon: MessageSquare },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
@@ -80,6 +81,7 @@ interface CandidateShellProps {
 export function CandidateShell({ section, children }: CandidateShellProps) {
   const { navigate } = useSiteRouter();
   const { user, signOut } = useSession();
+  const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const initials = user
@@ -144,6 +146,14 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
       </nav>
 
       <div className="border-t p-3">
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-muted-foreground"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+          {theme === "dark" ? "Mode clair" : "Mode sombre"}
+        </Button>
         <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
           Se déconnecter
