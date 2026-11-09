@@ -15,10 +15,10 @@ export async function GET(req: NextRequest) {
     }
     const courses = await db.trainingCourse.findMany({
       include: {
-        trainer: { select: { firstName: true, lastName: true } },
         _count: { select: { modules: true, enrollments: true, exercises: true } },
+        trainer: { select: { firstName: true, lastName: true } },
       },
-      orderBy: [{ level: "asc" }, { createdAt: "desc" }],
+      orderBy: { createdAt: "desc" },
     });
     return Response.json({ courses });
   } catch (error) {
