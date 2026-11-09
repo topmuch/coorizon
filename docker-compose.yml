@@ -12,8 +12,8 @@ services:
       - "3000"
     environment:
       - DATABASE_URL=file:/app/data/coorizon.db
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-to-a-strong-secret}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-dMWOg0J1skerlxx4urL01BKBraHsQjFYel4I+slR9fk=}
+      - NEXTAUTH_URL=https://coorizon.qrtags.pro
       - APP_NAME=COORIZON
       - NODE_ENV=production
       - PORT=3000

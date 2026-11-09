@@ -52,6 +52,7 @@ import { AdminImmigration } from "../dashboard/admin-immigration";
 import { AdminPayments } from "../dashboard/admin-payments";
 import { AdminAutomation } from "../dashboard/admin-automation";
 import { AdminAi } from "../dashboard/admin-ai";
+import { AdminTraining } from "../dashboard/admin-training";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
@@ -235,6 +236,8 @@ export function DashboardPage() {
           return <AdminOffers />;
         case "applications":
           return <AdminApplications />;
+        case "training":
+          return <AdminTraining />;
         case "cms":
           return <AdminCms />;
         case "audit":
