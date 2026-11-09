@@ -13,10 +13,10 @@ interface LogoProps {
 
 export function Logo({ className, variant = "default", showMark = true, size = "md" }: LogoProps) {
   const sizes = {
-    sm: { height: 32, radius: 4 },
-    md: { height: 44, radius: 6 },
-    lg: { height: 60, radius: 8 },
-    xl: { height: 80, radius: 10 },
+    sm: { height: 44, radius: 6 },
+    md: { height: 56, radius: 8 },
+    lg: { height: 80, radius: 10 },
+    xl: { height: 110, radius: 12 },
   };
   const s = sizes[size];
 
