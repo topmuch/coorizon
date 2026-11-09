@@ -58,6 +58,7 @@ async function main() {
     await seedJobs();
     await seedValidatedRecruiter();
     await seedTraining();
+    await seedImmigration();
   }
 }
 
@@ -499,6 +500,82 @@ async function seedTraining() {
     });
     console.log("✓ Demo candidate enrolled in A1 course.");
   }
+}
+
+/**
+ * Seed an immigration agent + an immigration case (with checklist) for the demo
+ * candidate so LOT 7 is fully testable.
+ */
+async function seedImmigration() {
+  if (await db.immigrationCase.count() > 0) {
+    console.log("✓ Immigration cases already exist — skipping immigration seed.");
+    return;
+  }
+
+  const agentEmail = "agent.immigration@coorizon.com";
+  let agent = await db.user.findUnique({ where: { email: agentEmail } });
+  if (!agent) {
+    const passwordHash = await hashPassword("Agent2024!");
+    agent = await db.user.create({
+      data: {
+        email: agentEmail,
+        passwordHash,
+        role: ROLES.ImmigrationAgent,
+        status: "Active",
+        isActive: true,
+        firstName: "Sofia",
+        lastName: "Conti",
+      },
+    });
+    console.log("✓ Immigration agent created: agent.immigration@coorizon.com / Agent2024!");
+  }
+
+  const candidate = await db.user.findFirst({ where: { role: "Candidate" } });
+  if (!candidate) { console.log("✗ No candidate for immigration seed"); return; }
+
+  const offer = await db.jobOffer.findFirst({ where: { status: "Published" } });
+
+  const immigrationCase = await db.immigrationCase.create({
+    data: {
+      candidateId: candidate.id,
+      agentId: agent.id,
+      jobOfferId: offer?.id,
+      companyId: offer?.companyId,
+      status: "InProgress",
+      priority: "Normal",
+      notes: "Dossier en cours. Documents principaux reçus. En attente de vérification du contrat.",
+      openedAt: new Date(),
+    },
+  });
+
+  const checklist = [
+    { title: "Ouverture du dossier", description: "Création du dossier et collecte des informations initiales.", order: 0 },
+    { title: "Vérification d'identité", description: "Vérification du passeport et de la pièce d'identité.", order: 1 },
+    { title: "Collecte des justificatifs", description: "CV, diplômes, attestations de travail, casier judiciaire.", order: 2 },
+    { title: "Vérification du contrat", description: "Vérification du contrat de travail signé par l'entreprise italienne.", order: 3 },
+    { title: "Préparation des démarches", description: "Préparation du dossier de demande d'autorisation de travail (Nulla Osta).", order: 4 },
+    { title: "Suivi des autorisations", description: "Suivi de la demande auprès des autorités italiennes.", order: 5 },
+    { title: "Suivi du visa", description: "Demande et suivi du visa de travail auprès du consulat.", order: 6 },
+    { title: "Préparation au départ", description: "Billet d'avion, hébergement, formalités de départ.", order: 7 },
+    { title: "Clôture", description: "Clôture du dossier après arrivée en Italie.", order: 8 },
+  ];
+
+  for (const t of checklist) {
+    await db.immigrationTask.create({
+      data: {
+        caseId: immigrationCase.id,
+        title: t.title,
+        description: t.description,
+        status: t.order < 2 ? "Done" : t.order === 2 ? "InProgress" : "Todo",
+        order: t.order,
+        completedAt: t.order < 2 ? new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) : null,
+        dueDate: t.order >= 2 && t.order <= 6 ? new Date(Date.now() + (t.order * 7) * 24 * 60 * 60 * 1000) : null,
+        assigneeId: agent.id,
+      },
+    });
+  }
+
+  console.log("✓ Seeded 1 immigration case with 9-task checklist.");
 }
 
 main()

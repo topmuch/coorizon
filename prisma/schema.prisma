@@ -374,6 +374,7 @@ model JobOffer {
   updatedAt         DateTime       @updatedAt
 
   applications      Application[]
+  immigrationCases  ImmigrationCase[]
 
   @@index([companyId])
   @@index([status])
@@ -690,6 +691,7 @@ model ImmigrationCase {
   companyId   String?
   company     Company?              @relation(fields: [companyId], references: [id])
   jobOfferId  String?
+  jobOffer    JobOffer?             @relation(fields: [jobOfferId], references: [id])
   status      ImmigrationCaseStatus @default(Open)
   priority    String                @default("Normal")
   notes       String?

@@ -38,6 +38,15 @@ import { TrainerSettings } from "../dashboard/trainer-settings";
 import { CandidateMyTraining } from "../dashboard/candidate-my-training";
 import { CandidateExams } from "../dashboard/candidate-exams";
 import { CandidateCertificates } from "../dashboard/candidate-certificates";
+import { CandidateImmigration } from "../dashboard/candidate-immigration";
+import { AgentShell, type AgentSection } from "../dashboard/agent-shell";
+import { AgentOverview } from "../dashboard/agent-overview";
+import { AgentCases } from "../dashboard/agent-cases";
+import { AgentCaseDetail } from "../dashboard/agent-case-detail";
+import { AgentDeadlines } from "../dashboard/agent-deadlines";
+import { AgentCandidates } from "../dashboard/agent-candidates";
+import { AgentSettings } from "../dashboard/agent-settings";
+import { AdminImmigration } from "../dashboard/admin-immigration";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
@@ -62,6 +71,10 @@ const ADMIN_LOT_MAP: Record<string, string> = {
 
 const TRAINER_SECTIONS: TrainerSection[] = [
   "overview", "courses", "lessons", "learners", "exams", "settings",
+];
+
+const AGENT_SECTIONS: AgentSection[] = [
+  "overview", "cases", "deadlines", "candidates", "settings",
 ];
 
 const CANDIDATE_LOT_MAP: Record<string, string> = {
@@ -120,6 +133,8 @@ export function DashboardPage() {
           return <CandidateExams />;
         case "certificates":
           return <CandidateCertificates />;
+        case "immigration":
+          return <CandidateImmigration />;
         case "settings":
           return <CandidateSettings />;
         default:
@@ -214,6 +229,8 @@ export function DashboardPage() {
           return <AdminCms />;
         case "audit":
           return <AdminAudit />;
+        case "immigration":
+          return <AdminImmigration />;
         case "settings":
           return <AdminSettings />;
         default:
@@ -269,14 +286,55 @@ export function DashboardPage() {
     );
   }
 
-  // ── Other roles (Agents) — placeholder until later lots
+  // ── Agent space (LOT 7) ────────────────────────────────────────────
+  if (user.role === "RecruitmentAgent" || user.role === "ImmigrationAgent") {
+    if (user.status !== "Active") {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-bold text-navy">Compte indisponible</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Votre compte agent est actuellement {user.status === "Suspended" ? "suspendu" : "en attente"}.
+              Contactez l'administration COORIZON.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const section = (params.get("section") as AgentSection) || "overview";
+    const validSection = AGENT_SECTIONS.includes(section) ? section : "overview";
+    const caseId = params.get("case");
+
+    const renderSection = () => {
+      switch (validSection) {
+        case "overview":
+          return <AgentOverview />;
+        case "cases":
+          return caseId ? <AgentCaseDetail /> : <AgentCases />;
+        case "deadlines":
+          return <AgentDeadlines />;
+        case "candidates":
+          return <AgentCandidates />;
+        case "settings":
+          return <AgentSettings />;
+        default:
+          return <AgentOverview />;
+      }
+    };
+
+    return (
+      <AgentShell section={validSection}>{renderSection()}</AgentShell>
+    );
+  }
+
+  // ── Unknown role — placeholder
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <div className="max-w-md text-center">
         <h1 className="text-2xl font-bold text-navy">Espace en préparation</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Votre espace ({user.role}) sera disponible dans un lot à venir. En attendant,
-          vous pouvez consulter le site public.
+          Votre espace ({user.role}) sera disponible dans un lot à venir.
         </p>
       </div>
     </div>
