@@ -13,6 +13,8 @@ export type SiteRoute =
   | "faq"
   | "contact"
   | "login"
+  | "login-candidate"
+  | "login-recruiter"
   | "register-candidate"
   | "register-recruiter"
   | "dashboard";
@@ -43,6 +45,8 @@ function parseHash(): { route: SiteRoute; params: URLSearchParams } {
     "faq",
     "contact",
     "login",
+    "login-candidate",
+    "login-recruiter",
     "register-candidate",
     "register-recruiter",
     "dashboard",

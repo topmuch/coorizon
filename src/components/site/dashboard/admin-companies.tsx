@@ -19,6 +19,8 @@ import {
   Calendar,
   Briefcase,
   Hash,
+  Plus,
+  ArrowRight,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +59,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useSiteRouter } from "@/lib/site-router";
 
 /**
  * AdminCompanies — back-office section for company validation & lifecycle
@@ -314,6 +317,7 @@ function formatFileSize(bytes: number | null): string {
 
 export function AdminCompanies() {
   const { toast } = useToast();
+  const { navigate } = useSiteRouter();
 
   const [companies, setCompanies] = React.useState<Company[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -334,6 +338,9 @@ export function AdminCompanies() {
   // Suspend confirm state
   const [suspendCompany, setSuspendCompany] = React.useState<Company | null>(null);
   const [suspending, setSuspending] = React.useState(false);
+
+  // Add company dialog
+  const [showAddDialog, setShowAddDialog] = React.useState(false);
 
   // ── Fetch companies list ─────────────────────────────────────────────
   const load = React.useCallback(async () => {
@@ -454,8 +461,15 @@ export function AdminCompanies() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header>
-        <h1 className="text-2xl font-bold text-navy">Entreprises</h1>
+      <header className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold text-navy">Entreprises</h1>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Ajouter une entreprise</span>
+            <span className="sm:hidden">Ajouter</span>
+          </Button>
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Validez les entreprises inscrites, suspendez ou réactivez les comptes
           et consultez leurs documents justificatifs.
@@ -738,6 +752,51 @@ export function AdminCompanies() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ─── Add company dialog ─────────────────────────────────────────── */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-navy">
+              <Plus className="h-5 w-5 text-brand" />
+              Ajouter une entreprise
+            </DialogTitle>
+            <DialogDescription>
+              Les entreprises sont créées via le flux d'inscription recruteur.
+              Un administrateur valide ensuite le compte.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Pour créer une nouvelle entreprise, un recruteur doit s'inscrire
+              sur la plateforme en renseignant les informations légales de
+              sa société et en téléversant les documents justificatifs.
+              Une fois l'inscription effectuée, l'entreprise apparaîtra dans
+              la liste en attente de validation et vous pourrez la valider
+              depuis cette interface.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAddDialog(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={() => {
+                setShowAddDialog(false);
+                navigate("register-recruiter");
+              }}
+            >
+              Inscrire un recruteur
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -20,6 +20,10 @@ import {
   Award,
   GraduationCap,
   HandCoins,
+  Plus,
+  ArrowRight,
+  AlertCircle,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -234,6 +238,9 @@ export function AdminOffers() {
   const [closeOffer, setCloseOffer] = React.useState<Offer | null>(null);
   const [closing, setClosing] = React.useState(false);
 
+  // Add offer dialog
+  const [showAddDialog, setShowAddDialog] = React.useState(false);
+
   // ── Fetch offers list ───────────────────────────────────────────────
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -345,8 +352,15 @@ export function AdminOffers() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header>
-        <h1 className="text-2xl font-bold text-navy">Offres d'emploi</h1>
+      <header className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold text-navy">Offres d'emploi</h1>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Ajouter une offre</span>
+            <span className="sm:hidden">Ajouter</span>
+          </Button>
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Validez et publiez les offres soumises par les entreprises, suspendez
           ou clôturez les offres actives. L'édition du contenu reste du
@@ -357,8 +371,15 @@ export function AdminOffers() {
       {/* Error */}
       {error && (
         <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
           <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>{error}</span>
+            <Button size="sm" variant="outline" onClick={() => void load()}>
+              <RefreshCw className="h-4 w-4" />
+              Réessayer
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
@@ -602,6 +623,44 @@ export function AdminOffers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ─── Add offer dialog ───────────────────────────────────────────── */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-navy">
+              <Plus className="h-5 w-5 text-brand" />
+              Ajouter une offre
+            </DialogTitle>
+            <DialogDescription>
+              Les offres sont créées par les recruteurs depuis leur espace.
+              En tant qu'administrateur, vous pouvez valider et publier les
+              offres soumises.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Le contenu d'une offre (titre, description, missions,
+              qualifications…) relève de la responsabilité du recruteur.
+              Une fois soumise, l'offre passe en attente de validation et
+              apparaît dans l'onglet « En attente » de cette interface.
+              Vous pourrez alors la publier, la rejeter ou la suspendre.
+            </p>
+            <p>
+              Pour suivre les offres en attente de validation, utilisez les
+              onglets de filtrage ci-dessus.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowAddDialog(false)}>
+              J'ai compris
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

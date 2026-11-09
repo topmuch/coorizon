@@ -148,7 +148,7 @@ export function DashboardPage() {
         case "settings":
           return <CandidateSettings />;
         default:
-          return <ComingSoonCard lot={CANDIDATE_LOT_MAP[validSection] ?? "Un lot à venir"} />;
+          return <ComingSoonCard lot={CANDIDATE_LOT_MAP[validSection] ?? "Un lot à venir"} context="votre espace candidat" />;
       }
     };
 
@@ -250,7 +250,7 @@ export function DashboardPage() {
         case "settings":
           return <AdminSettings />;
         default:
-          return <ComingSoonCard lot={ADMIN_LOT_MAP[validSection] ?? "Un lot à venir"} />;
+          return <ComingSoonCard lot={ADMIN_LOT_MAP[validSection] ?? "Un lot à venir"} context="le back-office administrateur" />;
       }
     };
 

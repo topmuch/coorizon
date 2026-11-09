@@ -4,7 +4,7 @@ import * as React from "react";
 import { Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function ComingSoonCard({ lot }: { lot: string }) {
+export function ComingSoonCard({ lot, context = "votre espace" }: { lot: string; context?: string }) {
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center px-6 py-16 text-center">
@@ -14,7 +14,7 @@ export function ComingSoonCard({ lot }: { lot: string }) {
         <h2 className="mt-4 text-lg font-semibold text-navy">Bientôt disponible</h2>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
           Cette section sera pleinement opérationnelle dans le <strong>{lot}</strong>.
-          En attendant, les autres modules de votre espace candidat sont disponibles via le menu.
+          En attendant, les autres modules de {context} sont disponibles via le menu.
         </p>
       </CardContent>
     </Card>

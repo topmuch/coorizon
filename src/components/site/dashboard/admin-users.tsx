@@ -30,6 +30,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   Loader2,
+  Plus,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -85,6 +87,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@/lib/auth/session-provider";
 import { ROLE_LABELS, ROLES, ALL_ROLES } from "@/lib/permissions";
 import type { Role } from "@/lib/permissions";
+import { useSiteRouter } from "@/lib/site-router";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -360,6 +363,7 @@ const PAGE_SIZE = 10;
 export function AdminUsers() {
   const { toast } = useToast();
   const { user: sessionUser } = useSession();
+  const { navigate } = useSiteRouter();
   const isSuperAdmin = sessionUser?.role === ROLES.SuperAdmin;
 
   // List state
@@ -377,6 +381,9 @@ export function AdminUsers() {
 
   // Action state
   const [pendingId, setPendingId] = React.useState<string | null>(null);
+
+  // Add user dialog
+  const [showAddDialog, setShowAddDialog] = React.useState(false);
 
   // Detail dialog
   const [detailUserId, setDetailUserId] = React.useState<string | null>(null);
@@ -592,9 +599,16 @@ export function AdminUsers() {
     <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <Users className="size-6 text-navy" />
-          <h1 className="text-2xl font-bold text-ink">Gestion des utilisateurs</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Users className="size-6 text-navy" />
+            <h1 className="text-2xl font-bold text-ink">Gestion des utilisateurs</h1>
+          </div>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">Ajouter un utilisateur</span>
+            <span className="sm:hidden">Ajouter</span>
+          </Button>
         </div>
         <p className="text-sm text-muted-foreground">
           Consultez, recherchez et administrez l'ensemble des comptes de la plateforme.
@@ -1322,6 +1336,54 @@ export function AdminUsers() {
                   Confirmer
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Add user dialog ─────────────────────────────────────────────── */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="size-5 text-navy" />
+              Ajouter un utilisateur
+            </DialogTitle>
+            <DialogDescription>
+              La création d'un compte se fait via le flux d'inscription
+              sécurisé de la plateforme. Choisissez le type de compte à créer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Pour des raisons de sécurité, les mots de passe sont définis par
+              l'utilisateur lui-même lors de son inscription. Vous serez
+              redirigé vers la page d'inscription correspondante.
+            </p>
+          </div>
+
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setShowAddDialog(false);
+                navigate("register-candidate");
+              }}
+            >
+              Créer un candidat
+              <ArrowRight className="size-4" />
+            </Button>
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setShowAddDialog(false);
+                navigate("register-recruiter");
+              }}
+            >
+              Créer un recruteur
+              <ArrowRight className="size-4" />
             </Button>
           </DialogFooter>
         </DialogContent>

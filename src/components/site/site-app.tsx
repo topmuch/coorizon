@@ -5,7 +5,7 @@ import { SiteRouterProvider, useSiteRouter } from "@/lib/site-router";
 import { SiteHeader } from "./header";
 import { SiteFooter } from "./footer";
 import { HomePage } from "./pages/home";
-import { LoginPage } from "./pages/auth-shared";
+import { LoginPage, CandidateLoginPage, RecruiterLoginPage } from "./pages/auth-shared";
 import { RegisterCandidatePage } from "./pages/register-candidate";
 import { RegisterRecruiterPage } from "./pages/register-recruiter";
 import { JobOffersPage } from "./pages/job-offers";
@@ -44,6 +44,10 @@ function PageRenderer() {
         return <ContactPage />;
       case "login":
         return <LoginPage />;
+      case "login-candidate":
+        return <CandidateLoginPage />;
+      case "login-recruiter":
+        return <RecruiterLoginPage />;
       case "register-candidate":
         return <RegisterCandidatePage />;
       case "register-recruiter":

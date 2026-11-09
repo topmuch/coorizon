@@ -16,6 +16,8 @@ import {
   XCircle,
   AlertCircle,
   Inbox,
+  Plus,
+  ArrowRight,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -233,6 +235,9 @@ export function AdminApplications() {
   // Details dialog
   const [detailApp, setDetailApp] = React.useState<ApplicationListItem | null>(null);
 
+  // Add application dialog
+  const [showAddDialog, setShowAddDialog] = React.useState(false);
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // Fetch list
@@ -298,10 +303,17 @@ export function AdminApplications() {
     <div className="space-y-6">
       {/* Header */}
       <header className="flex flex-col gap-1">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold text-navy">
-          <Send className="h-6 w-6 text-brand" />
-          Candidatures
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-navy">
+            <Send className="h-6 w-6 text-brand" />
+            Candidatures
+          </h1>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Ajouter une candidature</span>
+            <span className="sm:hidden">Ajouter</span>
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           Vue globale de toutes les candidatures de la plateforme, toutes entreprises confondues.
         </p>
@@ -508,6 +520,44 @@ export function AdminApplications() {
               onClose={() => setDetailApp(null)}
             />
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Add application dialog ─────────────────────────────────────── */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-navy">
+              <Plus className="h-5 w-5 text-brand" />
+              Ajouter une candidature
+            </DialogTitle>
+            <DialogDescription>
+              Les candidatures sont créées par les candidats depuis leur
+              espace lorsqu'ils postulent à une offre.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              En tant qu'administrateur, vous pouvez consulter et gérer
+              toutes les candidatures, mais la création d'une candidature
+              relève du candidat : il choisit une offre publiée, rédige sa
+              lettre de motivation et soumet sa candidature depuis son espace
+              personnel.
+            </p>
+            <p>
+              Les candidatures soumises apparaissent automatiquement dans
+              cette interface et vous pouvez suivre leur statut, leur
+              candidat et l'offre associée.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowAddDialog(false)}>
+              J'ai compris
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
