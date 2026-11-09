@@ -54,11 +54,15 @@ function PageRenderer() {
     }
   }, [route]);
 
+  // The dashboard is a full-screen app shell with its own sidebar/header.
+  // The public site header/footer are hidden on the dashboard route.
+  const isDashboard = route === "dashboard";
+
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
+      {!isDashboard && <SiteHeader />}
       <main className="flex-1">{page}</main>
-      <SiteFooter />
+      {!isDashboard && <SiteFooter />}
     </div>
   );
 }

@@ -61,3 +61,4 @@ prisma/*.db-journal
 
 # Agent context
 agent-ctx/
+tool-results/
