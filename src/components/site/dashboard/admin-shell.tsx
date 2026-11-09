@@ -98,10 +98,10 @@ export function AdminShell({ section, children }: AdminShellProps) {
       <div className="border-b p-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10 border border-border">
-            <AvatarFallback className="bg-navy/10 text-navy">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-primary/10 text-primary">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-navy">
+            <div className="truncate text-sm font-semibold text-foreground">
               {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email : ""}
             </div>
             <Badge variant="secondary" className="mt-0.5 text-[10px] font-normal">
@@ -122,7 +122,7 @@ export function AdminShell({ section, children }: AdminShellProps) {
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
                     active
-                      ? "bg-navy text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
                 >
@@ -160,12 +160,12 @@ export function AdminShell({ section, children }: AdminShellProps) {
   const activeItem = adminNav.find((n) => n.id === section);
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border bg-card lg:block">
         <div className="flex h-16 items-center border-b px-5">
           <button onClick={() => navigate("home")} aria-label="Accueil COORIZON" className="flex items-center gap-2">
             <Logo size="sm" />
-            <span className="rounded bg-navy px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Admin</span>
+            <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">Admin</span>
           </button>
         </div>
         {SidebarContent}
@@ -174,7 +174,7 @@ export function AdminShell({ section, children }: AdminShellProps) {
       <div className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:hidden">
         <button onClick={() => navigate("home")} aria-label="Accueil COORIZON" className="flex items-center gap-2">
           <Logo size="sm" />
-          <span className="rounded bg-navy px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Admin</span>
+          <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">Admin</span>
         </button>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
@@ -195,10 +195,10 @@ export function AdminShell({ section, children }: AdminShellProps) {
       <div className="lg:pl-64">
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-navy" />
+            <ShieldCheck className="h-4 w-4 text-foreground" />
             <span>Back-office</span>
             <span>/</span>
-            <span className="font-medium text-navy">{activeItem?.label}</span>
+            <span className="font-medium text-foreground">{activeItem?.label}</span>
           </div>
           {children}
         </main>

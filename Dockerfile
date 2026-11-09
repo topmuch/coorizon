@@ -68,7 +68,8 @@ COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/clie
 # Install prisma CLI + tsx locally (with all transitive deps)
 RUN npm install --legacy-peer-deps prisma@6.11.1 tsx
 
-# Copy seed script + lib
+# Copy seed script (plain JS, no tsx needed)
+COPY --from=builder /app/prisma/seed.js ./prisma/seed.js
 COPY --from=builder /app/prisma/seed.ts ./prisma/seed.ts
 COPY --from=builder /app/src/lib ./src/lib
 
@@ -76,8 +77,8 @@ COPY --from=builder /app/src/lib ./src/lib
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-# Create startup script
-RUN printf '#!/bin/sh\nset -e\necho "→ Running database migrations..."\nnpx prisma db push --accept-data-loss\necho "→ Seeding database (if needed)..."\nnpx tsx prisma/seed.ts || echo "Seed skipped (may already exist)"\necho "→ Starting COORIZON..."\nexec node server.js\n' > /app/start.sh && \
+# Create startup script — uses plain JS seed (no tsx dependency)
+RUN printf '#!/bin/sh\nset -e\necho "→ Running database migrations..."\nnpx prisma db push --accept-data-loss\necho "→ Seeding database..."\nnode prisma/seed.js\necho "→ Starting COORIZON..."\nexec node server.js\n' > /app/start.sh && \
     chmod +x /app/start.sh
 
 EXPOSE 3000

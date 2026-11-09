@@ -76,7 +76,7 @@ export function TrainerShell({ section, children }: TrainerShellProps) {
             <AvatarFallback className="bg-brand/10 text-brand">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-navy">
+            <div className="truncate text-sm font-semibold text-foreground">
               {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email : ""}
             </div>
             <Badge variant="secondary" className="mt-0.5 text-[10px] font-normal">
@@ -97,7 +97,7 @@ export function TrainerShell({ section, children }: TrainerShellProps) {
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
                     active
-                      ? "bg-brand text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
                 >
@@ -122,12 +122,12 @@ export function TrainerShell({ section, children }: TrainerShellProps) {
   const activeItem = trainerNav.find((n) => n.id === section);
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border bg-card lg:block">
         <div className="flex h-16 items-center border-b px-5">
           <button onClick={() => navigate("home")} aria-label="Accueil COORIZON" className="flex items-center gap-2">
             <Logo size="sm" />
-            <span className="rounded bg-brand px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Formateur</span>
+            <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">Formateur</span>
           </button>
         </div>
         {SidebarContent}
@@ -136,7 +136,7 @@ export function TrainerShell({ section, children }: TrainerShellProps) {
       <div className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:hidden">
         <button onClick={() => navigate("home")} aria-label="Accueil COORIZON" className="flex items-center gap-2">
           <Logo size="sm" />
-          <span className="rounded bg-brand px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Formateur</span>
+          <span className="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">Formateur</span>
         </button>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>

@@ -76,7 +76,7 @@ export function RecruiterShell({ section, children }: RecruiterShellProps) {
             <AvatarFallback className="bg-brand/10 text-brand">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-navy">
+            <div className="truncate text-sm font-semibold text-foreground">
               {user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email : ""}
             </div>
             <Badge variant="secondary" className="mt-0.5 text-[10px] font-normal">
@@ -97,7 +97,7 @@ export function RecruiterShell({ section, children }: RecruiterShellProps) {
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
                     active
-                      ? "bg-brand text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
                 >
@@ -122,7 +122,7 @@ export function RecruiterShell({ section, children }: RecruiterShellProps) {
   const activeItem = recruiterNav.find((n) => n.id === section);
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border bg-card lg:block">
         <div className="flex h-16 items-center border-b px-5">
           <button onClick={() => navigate("home")} aria-label="Accueil COORIZON">
