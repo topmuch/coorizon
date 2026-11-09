@@ -14,6 +14,9 @@ import {
   Server,
   HardDrive,
   ArrowRight,
+  Download,
+  Trash2,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -28,6 +31,20 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@/lib/auth/session-provider";
 import { useSiteRouter } from "@/lib/site-router";
 import { ROLE_LABELS, ALL_ROLES } from "@/lib/permissions";
@@ -407,6 +424,57 @@ export function AdminSettings() {
           mesure de sécurité.
         </AlertDescription>
       </Alert>
+
+      {/* ─── GDPR / Data Privacy ─── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Shield className="h-5 w-5 text-brand-green" />
+            Confidentialité & RGPD
+          </CardTitle>
+          <CardDescription>
+            Export et suppression des données personnelles (RGPD Article 15, 17, 20).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <Shield className="h-4 w-4 text-brand-green" />
+            <AlertDescription>
+              Conformément au RGPD et aux obligations applicables au Sénégal, les utilisateurs
+              peuvent demander l'export ou la suppression de leurs données personnelles.
+              Utilisez les outils ci-dessous pour répondre à ces demandes.
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Export */}
+            <div className="rounded-lg border border-border p-4">
+              <div className="flex items-center gap-2">
+                <Download className="h-5 w-5 text-brand" />
+                <h4 className="font-semibold text-navy">Exporter les données</h4>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Téléchargez toutes les données personnelles d'un utilisateur au format JSON
+                (droit à la portabilité).
+              </p>
+              <PrivacyExportTool />
+            </div>
+
+            {/* Delete */}
+            <div className="rounded-lg border border-italian-red/30 p-4">
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-italian-red" />
+                <h4 className="font-semibold text-navy">Supprimer les données</h4>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Anonymise et supprime les données personnelles d'un utilisateur.
+                Cette action est <strong className="text-italian-red">irréversible</strong>.
+              </p>
+              <PrivacyDeleteTool />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -458,6 +526,135 @@ function ReadonlyRow({ icon: Icon, label, value, note }: ReadonlyRowProps) {
         </div>
         {note && <p className="text-xs text-muted-foreground">{note}</p>}
       </div>
+    </div>
+  );
+}
+
+// ─── GDPR Tools ──────────────────────────────────────────────────────────────
+
+function PrivacyExportTool() {
+  const { toast } = useToast();
+  const [userId, setUserId] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  const handleExport = async () => {
+    if (!userId.trim()) {
+      toast({ title: "Erreur", description: "Saisissez un ID utilisateur.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/privacy/export?userId=${encodeURIComponent(userId.trim())}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Échec de l'export.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `coorizon-data-${userId.trim()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Export téléchargé", description: "Les données ont été exportées au format JSON." });
+    } catch (e) {
+      toast({ title: "Erreur", description: e instanceof Error ? e.message : "Échec de l'export.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-2">
+      <Label htmlFor="export-userid" className="text-xs">ID utilisateur</Label>
+      <div className="flex gap-2">
+        <Input
+          id="export-userid"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          placeholder="cmw..."
+          className="text-sm"
+        />
+        <Button size="sm" onClick={handleExport} disabled={loading} variant="outline">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Exporter
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PrivacyDeleteTool() {
+  const { toast } = useToast();
+  const [userId, setUserId] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+
+  const handleDelete = async () => {
+    if (!userId.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/privacy/delete?userId=${encodeURIComponent(userId.trim())}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Échec de la suppression.");
+      toast({ title: "Données supprimées", description: data.message || "Les données ont été anonymisées." });
+      setUserId("");
+      setOpen(false);
+    } catch (e) {
+      toast({ title: "Erreur", description: e instanceof Error ? e.message : "Échec de la suppression.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-2">
+      <Label htmlFor="delete-userid" className="text-xs">ID utilisateur</Label>
+      <Input
+        id="delete-userid"
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        placeholder="cmw..."
+        className="text-sm"
+      />
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogTrigger asChild>
+          <Button size="sm" variant="destructive" disabled={!userId.trim()} className="w-full">
+            <Trash2 className="h-4 w-4" />
+            Supprimer les données
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est <strong>irréversible</strong>. Toutes les données personnelles
+              de cet utilisateur (documents, messages, notifications, certificats…) seront
+              définitivement supprimées. Le compte sera anonymisé et désactivé.
+              Les enregistrements liés (candidatures, paiements) seront conservés pour
+              l'intégrité référentielle mais l'utilisateur sera anonymisé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={loading}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Confirmer la suppression
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

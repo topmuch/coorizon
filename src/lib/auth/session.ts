@@ -67,7 +67,8 @@ export function authErrorResponse(error: unknown): Response {
   if (e?.code === "UNAUTHORIZED") {
     return Response.json({ error: "Vous devez être connecté pour effectuer cette action." }, { status: 401 });
   }
-  return Response.json({ error: e?.message || "Une erreur est survenue." }, { status: 500 });
+  // Never leak raw error messages (Prisma constraints, SDK errors, etc.)
+  return Response.json({ error: "Une erreur est survenue." }, { status: 500 });
 }
 
 export { ROLES };

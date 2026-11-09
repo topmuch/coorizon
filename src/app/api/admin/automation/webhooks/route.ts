@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       name: w.name,
       url: w.url,
       eventTypes: w.eventTypes,
-      secret: w.secret,
+      secret: w.secret ? "***" : null,
       isActive: w.isActive,
       createdAt: w.createdAt.toISOString(),
       updatedAt: w.updatedAt.toISOString(),
