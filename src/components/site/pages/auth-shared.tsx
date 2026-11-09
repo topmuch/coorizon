@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Mail, Lock, ArrowRight, User, Eye, EyeOff } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,17 +11,19 @@ import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSiteRouter } from "@/lib/site-router";
 import { useToast } from "@/hooks/use-toast";
+import { useSession } from "@/lib/auth/session-provider";
 
 export function LoginPage() {
   const { navigate } = useSiteRouter();
   const { toast } = useToast();
+  const { refresh } = useSession();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPwd, setShowPwd] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!email || !password) {
@@ -28,14 +31,38 @@ export function LoginPage() {
       return;
     }
     setLoading(true);
-    // LOT 2 — real authentication will be wired here (NextAuth + DB).
-    setTimeout(() => {
-      setLoading(false);
-      toast({
-        title: "Connexion simulée",
-        description: "L'authentification réelle sera disponible dans le LOT 2 (rôles & permissions).",
+    try {
+      const res = await signIn("credentials", {
+        email: email.trim().toLowerCase(),
+        password,
+        redirect: false,
       });
-    }, 700);
+      if (!res || res.error) {
+        // NextAuth surfaces authorize() errors via the `error` query string.
+        const msg = res?.error || "Identifiants incorrects.";
+        // Map the error code to a friendly message.
+        let friendly = msg;
+        if (msg.includes("Pending")) {
+          friendly = "Votre compte est en attente de validation par l'administration.";
+        } else if (msg.includes("Suspended") || msg.includes("désactivé")) {
+          friendly = msg;
+        } else if (msg === "CredentialsSignin" || msg.includes("Identifiants")) {
+          friendly = "Email ou mot de passe incorrect.";
+        }
+        setError(friendly);
+        setLoading(false);
+        return;
+      }
+      await refresh();
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur votre espace COORIZON.",
+      });
+      navigate("dashboard");
+    } catch {
+      setError("Une erreur est survenue lors de la connexion. Réessayez.");
+      setLoading(false);
+    }
   };
 
   return (

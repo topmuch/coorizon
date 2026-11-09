@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Menu, ChevronDown, Briefcase, GraduationCap, Plane, Building2, CircleHelp, Info, Mail } from "lucide-react";
+import { Menu, ChevronDown, Briefcase, GraduationCap, Plane, Building2, CircleHelp, Info, Mail, LogOut, LayoutDashboard } from "lucide-react";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from "@/components/ui/sheet";
@@ -15,7 +15,18 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSiteRouter, type SiteRoute } from "@/lib/site-router";
+import { useSession } from "@/lib/auth/session-provider";
+import { ROLE_LABELS } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -38,12 +49,22 @@ const mainNav: NavItem[] = [
 
 export function SiteHeader() {
   const { route, navigate } = useSiteRouter();
+  const { user, loading, signOut } = useSession();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const handleNav = (r: SiteRoute) => {
     setMobileOpen(false);
     navigate(r);
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("home");
+  };
+
+  const initials = user
+    ? ((user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")).toUpperCase() || user.email[0].toUpperCase()
+    : "";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75">
@@ -133,12 +154,53 @@ export function SiteHeader() {
         </NavigationMenu>
 
         <div className="hidden items-center gap-2 xl:flex">
-          <Button variant="ghost" onClick={() => handleNav("login")}>
-            Connexion
-          </Button>
-          <Button onClick={() => handleNav("register-candidate")} className="bg-brand hover:bg-brand/90">
-            Je suis candidat
-          </Button>
+          {loading ? (
+            <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-3 transition-colors hover:bg-accent">
+                  <Avatar className="h-7 w-7">
+                    <AvatarFallback className="bg-brand/10 text-xs text-brand">{initials}</AvatarFallback>
+                  </Avatar>
+                  <span className="max-w-[120px] truncate text-sm font-medium">
+                    {user.firstName ?? user.email.split("@")[0]}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span className="truncate text-sm font-semibold">{user.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : user.email}</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? user.role}
+                      {user.status === "Pending" && " · En attente"}
+                    </span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleNav("dashboard")}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Mon espace
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Se déconnecter
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => handleNav("login")}>
+                Connexion
+              </Button>
+              <Button onClick={() => handleNav("register-candidate")} className="bg-brand hover:bg-brand/90">
+                Je suis candidat
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile menu */}
@@ -179,15 +241,38 @@ export function SiteHeader() {
                   </ul>
                 </nav>
                 <div className="space-y-2 border-t pt-4">
-                  <Button variant="outline" className="w-full" onClick={() => handleNav("login")}>
-                    Connexion
-                  </Button>
-                  <Button className="w-full bg-brand hover:bg-brand/90" onClick={() => handleNav("register-candidate")}>
-                    Je suis candidat
-                  </Button>
-                  <Button variant="secondary" className="w-full" onClick={() => handleNav("register-recruiter")}>
-                    Je suis recruteur
-                  </Button>
+                  {user ? (
+                    <>
+                      <div className="rounded-lg bg-accent px-3 py-2 text-sm">
+                        <div className="font-semibold text-navy">
+                          {user.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : user.email}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? user.role}
+                        </div>
+                      </div>
+                      <Button className="w-full bg-brand hover:bg-brand/90" onClick={() => handleNav("dashboard")}>
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Mon espace
+                      </Button>
+                      <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Se déconnecter
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" className="w-full" onClick={() => handleNav("login")}>
+                        Connexion
+                      </Button>
+                      <Button className="w-full bg-brand hover:bg-brand/90" onClick={() => handleNav("register-candidate")}>
+                        Je suis candidat
+                      </Button>
+                      <Button variant="secondary" className="w-full" onClick={() => handleNav("register-recruiter")}>
+                        Je suis recruteur
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>

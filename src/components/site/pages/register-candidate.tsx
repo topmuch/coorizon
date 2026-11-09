@@ -68,7 +68,7 @@ export function RegisterCandidatePage() {
 
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const next = () => {
+  const next = async () => {
     setError(null);
     if (step === 0) {
       if (!form.firstName || !form.lastName || !form.email || !form.password) {
@@ -89,16 +89,41 @@ export function RegisterCandidatePage() {
         setError("Veuillez renseigner votre ville, métier recherché et secteur.");
         return;
       }
-      setStep(2);
+      setError(null);
       setLoading(true);
-      // LOT 2 — real registration + role assignment (Candidate) here.
-      setTimeout(() => {
-        setLoading(false);
-        toast({
-          title: "Inscription enregistrée",
-          description: "Votre espace candidat sera activé dans le LOT 2 (authentification & rôles).",
+      try {
+        const res = await fetch("/api/auth/register-candidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: form.firstName,
+            lastName: form.lastName,
+            email: form.email,
+            password: form.password,
+            phone: form.phone || undefined,
+            nationality: form.nationality,
+            residenceCountry: form.residence,
+            city: form.city,
+            desiredJob: form.job,
+            sector: form.sector,
+            italianLevel: form.italianLevel === "Aucun" ? undefined : form.italianLevel,
+          }),
         });
-      }, 900);
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "L'inscription a échoué. Réessayez.");
+          setLoading(false);
+          return;
+        }
+        setStep(2);
+        toast({
+          title: "Inscription réussie !",
+          description: "Votre compte candidat est créé. Vous pouvez vous connecter.",
+        });
+      } catch {
+        setError("Une erreur est survenue. Vérifiez votre connexion et réessayez.");
+        setLoading(false);
+      }
     }
   };
 

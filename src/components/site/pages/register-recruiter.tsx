@@ -55,7 +55,7 @@ export function RegisterRecruiterPage() {
   });
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const required = ["firstName", "lastName", "email", "password", "company", "vat", "city", "region", "sector"];
@@ -74,15 +74,43 @@ export function RegisterRecruiterPage() {
       return;
     }
     setLoading(true);
-    // LOT 2 — create user (Recruiter role) + company, status pending validation by admin.
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/register-recruiter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          password: form.password,
+          phone: form.phone || undefined,
+          jobTitle: form.responsibleName || undefined,
+          company: form.company,
+          vat: form.vat,
+          tax: form.tax || undefined,
+          city: form.city,
+          region: form.region,
+          sector: form.sector,
+          address: form.address || undefined,
+          website: form.website || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "L'inscription a échoué. Réessayez.");
+        setLoading(false);
+        return;
+      }
       setLoading(false);
       setDone(true);
       toast({
         title: "Demande d'inscription envoyée",
         description: "Votre compte entreprise sera validé par l'administration COORIZON.",
       });
-    }, 900);
+    } catch {
+      setError("Une erreur est survenue. Vérifiez votre connexion et réessayez.");
+      setLoading(false);
+    }
   };
 
   if (done) {

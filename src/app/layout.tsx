@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { SessionProvider } from "@/lib/auth/session-provider";
 
 const display = Plus_Jakarta_Sans({
   variable: "--font-display",
@@ -54,7 +55,9 @@ export default function RootLayout({
       <body
         className={`${display.variable} ${inter.variable} antialiased bg-background text-foreground`}
       >
-        {children}
+        <SessionProvider>
+          {children}
+        </SessionProvider>
         <Toaster />
       </body>
     </html>

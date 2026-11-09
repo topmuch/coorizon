@@ -16,6 +16,7 @@ import { HowItWorksPage } from "./pages/how-it-works";
 import { AboutPage } from "./pages/about";
 import { FaqPage } from "./pages/faq";
 import { ContactPage } from "./pages/contact";
+import { DashboardPage } from "./pages/dashboard";
 
 function PageRenderer() {
   const { route } = useSiteRouter();
@@ -46,6 +47,8 @@ function PageRenderer() {
         return <RegisterCandidatePage />;
       case "register-recruiter":
         return <RegisterRecruiterPage />;
+      case "dashboard":
+        return <DashboardPage />;
       default:
         return <HomePage />;
     }

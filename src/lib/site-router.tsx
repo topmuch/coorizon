@@ -14,7 +14,8 @@ export type SiteRoute =
   | "contact"
   | "login"
   | "register-candidate"
-  | "register-recruiter";
+  | "register-recruiter"
+  | "dashboard";
 
 export interface SiteRouterState {
   route: SiteRoute;
@@ -44,6 +45,7 @@ function parseHash(): { route: SiteRoute; params: URLSearchParams } {
     "login",
     "register-candidate",
     "register-recruiter",
+    "dashboard",
   ];
   return {
     route: allowed.includes(route) ? route : "home",

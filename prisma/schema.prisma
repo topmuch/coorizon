@@ -1,8 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// COORIZON — Prisma schema
+// Plateforme de recrutement international, formation en italien & accompagnement à l'immigration
+//
+// SQLite is used as the local database. Enums are stored as strings by Prisma.
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +12,848 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// =====================================================================
+// ENUMS
+// =====================================================================
+
+enum Role {
+  Candidate         // Candidat
+  Recruiter         // Recruteur (entreprise)
+  Trainer           // Formateur en italien
+  RecruitmentAgent  // Agent de recrutement
+  ImmigrationAgent  // Agent d'immigration
+  Admin             // Administrateur
+  SuperAdmin        // Super administrateur
 }
 
-model Post {
+enum UserStatus {
+  Active      // Compte actif
+  Pending     // En attente de validation (recruteurs)
+  Suspended   // Suspendu
+  Deactivated // Désactivé
+}
+
+enum CompanyStatus {
+  Pending    // En attente de validation admin
+  Validated  // Validée
+  Suspended  // Suspendue
+  Rejected   // Rejetée
+}
+
+enum JobOfferStatus {
+  Draft              // Brouillon
+  PendingValidation  // En attente de validation
+  Published          // Publiée
+  Suspended          // Suspendue
+  Closed             // Clôturée
+  Archived           // Archivée
+}
+
+enum ApplicationStatus {
+  Submitted   // Candidature envoyée
+  Preselected // Présélectionné
+  Interview   // Entretien programmé
+  Offered     // Proposition envoyée
+  Accepted    // Acceptée
+  Rejected    // Refusée
+  Withdrawn   // Retirée par le candidat
+}
+
+enum DocumentStatus {
+  NotProvided // Non fourni
+  Pending     // En attente de validation
+  Validated   // Validé
+  Refused     // Refusé
+  Expired     // Expiré
+}
+
+enum DocumentType {
+  CV
+  Passport
+  IDCard
+  Diploma
+  WorkCertificate
+  Certificate
+  CoverLetter
+  CompanyRegistration
+  TaxId
+  IDDocument
+  Other
+}
+
+enum CourseLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum EnrollmentStatus {
+  Active
+  Completed
+  Cancelled
+  Paused
+}
+
+enum QuestionType {
+  MCQ                   // QCM
+  TrueFalse             // Vrai ou faux
+  Vocabulary            // Vocabulaire
+  Translation           // Traduction
+  ReadingComprehension  // Compréhension écrite
+  ListeningComprehension // Compréhension orale
+}
+
+enum ImmigrationCaseStatus {
+  Open
+  InProgress
+  DocumentsPending
+  VisaPending
+  Ready
+  Closed
+  OnHold
+}
+
+enum ImmigrationTaskStatus {
+  Todo
+  InProgress
+  Done
+  Blocked
+}
+
+enum PaymentStatus {
+  Pending
+  Paid
+  Failed
+  Refunded
+  Cancelled
+}
+
+enum NotificationType {
+  Info
+  Success
+  Warning
+  Error
+}
+
+enum MessageReadStatus {
+  Unread
+  Read
+}
+
+// =====================================================================
+// 1. USERS (core authentication entity)
+// =====================================================================
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  passwordHash  String
+  role          Role       @default(Candidate)
+  status        UserStatus @default(Pending)
+  firstName     String?
+  lastName      String?
+  phone         String?
+  preferredLang String     @default("fr") // "fr" | "it"
+  isActive      Boolean    @default(true)
+  emailVerified DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Profile relations (1-1, optional depending on role)
+  candidateProfile CandidateProfile?
+  recruiterProfile RecruiterProfile?
+  trainerProfile   TrainerProfile?
+
+  // Candidate-side relations
+  candidateDocuments CandidateDocument[]
+  applications       Application[]
+  enrollments        Enrollment[]
+  examAttempts       ExamAttempt[]
+  certificates       Certificate[]
+
+  // Recruiter-side relations
+  jobOffers          JobOffer[]
+  applicationsReviewed ApplicationHistory[]
+  interviewsAsRecruiter Interview[] @relation("RecruiterInterviews")
+
+  // Trainer-side relations
+  coursesCreated TrainingCourse[] @relation("TrainerCourses")
+
+  // Agent-side relations
+  immigrationCasesAsAgent ImmigrationCase[] @relation("AgentImmigrationCases")
+  immigrationTasks        ImmigrationTask[]
+
+  // Candidate immigration cases
+  immigrationCasesAsCandidate ImmigrationCase[] @relation("CandidateImmigrationCases")
+  interviewsAsCandidate       Interview[]       @relation("CandidateInterviews")
+
+  // Messaging & notifications
+  messagesSent     Message[]      @relation("SenderMessages")
+  messagesReceived Message[]      @relation("RecipientMessages")
+  notifications    Notification[]
+
+  // Payments
+  payments Payment[]
+
+  // Audit
+  auditLogs AuditLog[]
+
+  @@index([role])
+  @@index([status])
+  @@index([email])
+}
+
+// =====================================================================
+// 2. CANDIDATE PROFILES
+// =====================================================================
+
+model CandidateProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Identity
+  nationality        String?
+  residenceCountry   String?
+  city               String?
+  dateOfBirth        DateTime?
+  photoUrl           String?
+
+  // Professional
+  desiredJob         String?
+  sector             String?
+  educationLevel     String?
+  diplomas           String? // free text / JSON string
+  experiences        String? // free text / JSON string
+  skills             String? // free text / JSON string
+  languages          String? // free text / JSON string
+  italianLevel       CourseLevel?
+  availability       String?
+  geographicMobility String?
+
+  // Profile completion 0-100
+  completionPct      Int      @default(0)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// =====================================================================
+// 3. RECRUITER PROFILES
+// =====================================================================
+
+model RecruiterProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Responsible person details
+  responsibleName  String?
+  responsiblePhone String?
+  responsibleEmail String?
+  jobTitle         String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+  @@index([companyId])
+}
+
+// =====================================================================
+// 4. TRAINER PROFILES
+// =====================================================================
+
+model TrainerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio         String?
+  specialties String? // e.g. "A1,A2,B1"
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// =====================================================================
+// 5. COMPANIES
+// =====================================================================
+
+model Company {
+  id                 String        @id @default(cuid())
+  legalName          String
+  registrationNumber String?
+  taxId              String?
+  vatNumber          String?
+  address            String?
+  city               String?
+  region             String? // Italian region
+  country            String        @default("Italie")
+  website            String?
+  sector             String?
+  size               String?
+  status             CompanyStatus @default(Pending)
+  validatedAt        DateTime?
+  validatedById      String? // User (Admin) who validated
+  rejectionReason    String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  documents          CompanyDocument[]
+  recruiters         RecruiterProfile[]
+  jobOffers          JobOffer[]
+  immigrationCases   ImmigrationCase[]
+
+  @@index([status])
+  @@index([sector])
+}
+
+// =====================================================================
+// 6. COMPANY DOCUMENTS (justificatifs)
+// =====================================================================
+
+model CompanyDocument {
+  id          String         @id @default(cuid())
+  companyId   String
+  company     Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type        DocumentType
+  fileName    String
+  fileUrl     String
+  mimeType    String?
+  sizeBytes   Int?
+  status      DocumentStatus @default(Pending)
+  reviewedById String?
+  reviewNote  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+}
+
+// =====================================================================
+// 7. JOB OFFERS
+// =====================================================================
+
+model JobOffer {
+  id                String         @id @default(cuid())
+  companyId         String
+  company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById       String
+  createdBy         User           @relation(fields: [createdById], references: [id])
+
+  title             String
+  description       String
+  missions          String?
+  sector            String
+  city              String
+  region            String?
+  positions         Int            @default(1)
+  contractType      String         @default("CDI")
+  salary            String?
+  experienceRequired String?
+  italianLevel      CourseLevel?
+  qualifications    String?
+  applicationDeadline DateTime?
+  status            JobOfferStatus @default(Draft)
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  applications      Application[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([sector])
+}
+
+// =====================================================================
+// 8. APPLICATIONS (candidatures)
+// =====================================================================
+
+model Application {
+  id          String           @id @default(cuid())
+  candidateId String
+  candidate   User             @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobOfferId  String
+  jobOffer    JobOffer         @relation(fields: [jobOfferId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus @default(Submitted)
+  coverLetter String?
+  recruiterNote String?
+  rejectionReason String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  history     ApplicationHistory[]
+  interviews  Interview[]
+
+  @@index([candidateId])
+  @@index([jobOfferId])
+  @@index([status])
+}
+
+// =====================================================================
+// 9. APPLICATION HISTORY (audit trail of status changes)
+// =====================================================================
+
+model ApplicationHistory {
+  id            String           @id @default(cuid())
+  applicationId String
+  application   Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  changedById   String
+  changedBy     User             @relation(fields: [changedById], references: [id])
+  comment       String?
+  createdAt     DateTime         @default(now())
+
+  @@index([applicationId])
+}
+
+// =====================================================================
+// 10. INTERVIEWS
+// =====================================================================
+
+model Interview {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  candidateId   String
+  candidate     User     @relation("CandidateInterviews", fields: [candidateId], references: [id])
+  recruiterId   String
+  recruiter     User     @relation("RecruiterInterviews", fields: [recruiterId], references: [id])
+  scheduledAt   DateTime
+  durationMin   Int      @default(30)
+  location      String?
+  meetingUrl    String?
+  status        String   @default("Scheduled") // Scheduled, Completed, Cancelled, NoShow
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([recruiterId])
+  @@index([applicationId])
+}
+
+// =====================================================================
+// 11. CANDIDATE DOCUMENTS (private, protected)
+// =====================================================================
+
+model CandidateDocument {
+  id           String         @id @default(cuid())
+  candidateId  String
+  candidate    User           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  type         DocumentType
+  fileName     String
+  fileUrl      String
+  mimeType     String?
+  sizeBytes    Int?
+  status       DocumentStatus @default(NotProvided)
+  reviewedById String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([candidateId])
+  @@index([status])
+}
+
+// =====================================================================
+// 12. TRAINING COURSES
+// =====================================================================
+
+model TrainingCourse {
+  id          String      @id @default(cuid())
+  title       String
+  subtitle    String?
+  description String
+  level       CourseLevel
+  imageUrl    String?
+  durationHours Int?
+  isPublished Boolean     @default(false)
+  trainerId   String?
+  trainer     User?       @relation("TrainerCourses", fields: [trainerId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  modules     CourseModule[]
+  enrollments Enrollment[]
+  exercises   Exercise[]
+  certificates Certificate[]
+
+  @@index([level])
+  @@index([isPublished])
+}
+
+// =====================================================================
+// 13. COURSE MODULES
+// =====================================================================
+
+model CourseModule {
   id        String   @id @default(cuid())
+  courseId  String
+  course    TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  description String?
+  order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  lessons   Lesson[]
+
+  @@index([courseId])
+}
+
+// =====================================================================
+// 14. LESSONS
+// =====================================================================
+
+model Lesson {
+  id         String   @id @default(cuid())
+  moduleId   String
+  module     CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title      String
+  content    String?
+  videoUrl   String?
+  durationMin Int?
+  order      Int      @default(0)
+  isPublished Boolean @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  resources  LessonResource[]
+
+  @@index([moduleId])
+}
+
+// =====================================================================
+// 15. LESSON RESOURCES (PDFs, files)
+// =====================================================================
+
+model LessonResource {
+  id        String   @id @default(cuid())
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title     String
+  fileUrl   String
+  mimeType  String?
+  sizeBytes Int?
+  createdAt DateTime @default(now())
+
+  @@index([lessonId])
+}
+
+// =====================================================================
+// 16. ENROLLMENTS
+// =====================================================================
+
+model Enrollment {
+  id         String           @id @default(cuid())
+  candidateId String
+  candidate  User             @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  courseId   String
+  course     TrainingCourse   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status     EnrollmentStatus @default(Active)
+  progressPct Int             @default(0)
+  enrolledAt DateTime         @default(now())
+  completedAt DateTime?
+  updatedAt  DateTime         @updatedAt
+
+  examAttempts ExamAttempt[]
+
+  @@unique([candidateId, courseId])
+  @@index([candidateId])
+  @@index([courseId])
+}
+
+// =====================================================================
+// 17. EXERCISES (and exams)
+// =====================================================================
+
+model Exercise {
+  id        String       @id @default(cuid())
+  courseId  String
+  course    TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  description String?
+  type      String       @default("Exercise") // Exercise | Exam
+  passingScore Int?
+  timeLimitMin Int?
+  order     Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  questions Question[]
+  attempts  ExamAttempt[]
+
+  @@index([courseId])
+}
+
+// =====================================================================
+// 18. QUESTIONS
+// =====================================================================
+
+model Question {
+  id         String      @id @default(cuid())
+  exerciseId String
+  exercise   Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  type       QuestionType
+  prompt     String
+  // For MCQ: JSON array of options; for TrueFalse: ["Vrai","Faux"]
+  options    String
+  // Correct answer(s) — JSON string (index or value)
+  answer     String
+  explanation String?
+  points     Int         @default(1)
+  order      Int         @default(0)
+  createdAt  DateTime    @default(now())
+
+  @@index([exerciseId])
+}
+
+// =====================================================================
+// 19. EXAM ATTEMPTS
+// =====================================================================
+
+model ExamAttempt {
+  id           String     @id @default(cuid())
+  exerciseId   String
+  exercise     Exercise   @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  candidateId  String
+  candidate    User       @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  enrollmentId String?
+  enrollment   Enrollment? @relation(fields: [enrollmentId], references: [id])
+  // JSON string of answers: [{questionId, answer, isCorrect}]
+  answers      String
+  score        Int        @default(0)
+  maxScore     Int        @default(0)
+  passed       Boolean    @default(false)
+  startedAt    DateTime   @default(now())
+  completedAt  DateTime?
+
+  @@index([candidateId])
+  @@index([exerciseId])
+}
+
+// =====================================================================
+// 20. CERTIFICATES (internal attestations)
+// =====================================================================
+
+model Certificate {
+  id              String   @id @default(cuid())
+  candidateId     String
+  candidate       User     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  certificateNumber String @unique
+  fullName        String
+  courseName      String
+  level           CourseLevel
+  score           Int
+  issueDate       DateTime @default(now())
+  // URL to a QR code image for verification
+  qrCodeUrl       String?
+  isRevoked       Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+
+  @@index([candidateId])
+  @@index([courseId])
+}
+
+// =====================================================================
+// 21. IMMIGRATION CASES (dossiers administratifs)
+// =====================================================================
+
+model ImmigrationCase {
+  id          String                @id @default(cuid())
+  candidateId String
+  candidate   User                  @relation("CandidateImmigrationCases", fields: [candidateId], references: [id], onDelete: Cascade)
+  agentId     String?
+  agent       User?                 @relation("AgentImmigrationCases", fields: [agentId], references: [id])
+  companyId   String?
+  company     Company?              @relation(fields: [companyId], references: [id])
+  jobOfferId  String?
+  status      ImmigrationCaseStatus @default(Open)
+  priority    String                @default("Normal")
+  notes       String?
+  openedAt    DateTime              @default(now())
+  closedAt    DateTime?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  tasks       ImmigrationTask[]
+
+  @@index([candidateId])
+  @@index([agentId])
+  @@index([status])
+}
+
+// =====================================================================
+// 22. IMMIGRATION TASKS (checklist)
+// =====================================================================
+
+model ImmigrationTask {
+  id          String               @id @default(cuid())
+  caseId      String
+  case        ImmigrationCase      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      ImmigrationTaskStatus @default(Todo)
+  dueDate     DateTime?
+  completedAt DateTime?
+  assigneeId  String?
+  assignee    User?                @relation(fields: [assigneeId], references: [id])
+  order       Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([caseId])
+  @@index([status])
+}
+
+// =====================================================================
+// 23. MESSAGES (messagerie interne)
+// =====================================================================
+
+model Message {
+  id           String           @id @default(cuid())
+  senderId     String
+  sender       User             @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId  String
+  recipient    User             @relation("RecipientMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  subject      String?
+  body         String
+  readStatus   MessageReadStatus @default(Unread)
+  readAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([readStatus])
+}
+
+// =====================================================================
+// 24. NOTIFICATIONS
+// =====================================================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(Info)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// =====================================================================
+// 25. PAYMENTS
+// =====================================================================
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Float
+  currency        String        @default("EUR")
+  description     String
+  status          PaymentStatus @default(Pending)
+  provider        String?       // "stripe" | "local"
+  providerPaymentId String?
+  invoiceNumber   String?
+  receiptUrl      String?
+  refundReason    String?
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// =====================================================================
+// 26. AUDIT LOGS (historique des actions sensibles)
+// =====================================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String   // e.g. "user.login", "company.validate", "document.refuse"
+  targetType String?  // e.g. "User", "Company", "Application"
+  targetId   String?
+  metadata   String?  // JSON string
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType, targetId])
+}
+
+// =====================================================================
+// 27. CMS PAGES (contenu administrable du site public)
+// =====================================================================
+
+model CMSPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  content   String   // HTML / markdown
+  excerpt   String?
+  isPublished Boolean @default(true)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([slug])
+  @@index([isPublished])
+}
+
+// =====================================================================
+// 28. BLOG ARTICLES (actualités)
+// =====================================================================
+
+model BlogArticle {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?
+  content     String
+  coverImageUrl String?
+  authorId    String?
+  category    String?
+  tags        String?  // comma separated
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isPublished])
+  @@index([category])
 }
