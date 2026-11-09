@@ -202,6 +202,13 @@ model User {
   // Audit
   auditLogs AuditLog[]
 
+  // Video resources (uploaded by admin/trainer)
+  uploadedVideos VideoResource[] @relation("UploadedVideos")
+  assignedVideos VideoAssignment[] @relation("AssignedVideos")
+
+  // Video views (candidate watch history)
+  videoViews VideoView[]
+
   @@index([role])
   @@index([status])
   @@index([email])
@@ -921,4 +928,73 @@ model WebhookConfig {
   updatedAt   DateTime @updatedAt
 
   @@index([isActive])
+}
+
+// =====================================================================
+// 32. VIDEO RESOURCES (médiathèque e-learning avancée)
+// =====================================================================
+
+model VideoResource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   // "youtube" | "mp4" | "vimeo"
+  url         String   // YouTube URL, Vimeo URL, or file path for MP4
+  embedId     String?  // extracted video ID (e.g. YouTube video ID)
+  duration    Int?     // duration in seconds (optional)
+  category    String   // "formation" | "tutoriel" | "accueil" | "personnalise" | "autre"
+  thumbnailUrl String?
+  uploadedById String  // admin or trainer who created it
+  uploadedBy  User     @relation("UploadedVideos", fields: [uploadedById], references: [id])
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments VideoAssignment[]
+  views       VideoView[]
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([uploadedById])
+}
+
+// =====================================================================
+// 33. VIDEO ASSIGNMENTS (assignation multiple de vidéos)
+// =====================================================================
+
+model VideoAssignment {
+  id          String   @id @default(cuid())
+  videoId     String
+  video       VideoResource @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  targetType  String   // "candidate" | "course" | "level" | "all"
+  targetId    String?  // userId (candidate), courseId, or level (A1/A2/B1...) — null for "all"
+  assignedById String
+  assignedBy  User     @relation("AssignedVideos", fields: [assignedById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([videoId, targetType, targetId])
+  @@index([videoId])
+  @@index([targetType, targetId])
+}
+
+// =====================================================================
+// 34. VIDEO VIEWS (statistiques de visionnage)
+// =====================================================================
+
+model VideoView {
+  id          String   @id @default(cuid())
+  videoId     String
+  video       VideoResource @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   User     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  watchTime   Int      @default(0)  // seconds watched
+  progressPct Int      @default(0)  // 0-100
+  completed   Boolean  @default(false)
+  lastWatchedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([videoId, candidateId])
+  @@index([videoId])
+  @@index([candidateId])
+  @@index([completed])
 }

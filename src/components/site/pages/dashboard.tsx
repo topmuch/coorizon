@@ -53,11 +53,13 @@ import { AdminPayments } from "../dashboard/admin-payments";
 import { AdminAutomation } from "../dashboard/admin-automation";
 import { AdminAi } from "../dashboard/admin-ai";
 import { AdminTraining } from "../dashboard/admin-training";
+import { AdminVideos } from "../dashboard/admin-videos";
+import { CandidateVideos } from "../dashboard/candidate-videos";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
   "training", "exams", "certificates", "immigration", "payments",
-  "messages", "notifications", "settings",
+  "videos", "messages", "notifications", "settings",
 ];
 
 const RECRUITER_SECTIONS: RecruiterSection[] = [
@@ -66,7 +68,7 @@ const RECRUITER_SECTIONS: RecruiterSection[] = [
 
 const ADMIN_SECTIONS: AdminSection[] = [
   "overview", "users", "companies", "offers", "applications",
-  "training", "immigration", "payments", "cms", "audit",
+  "training", "immigration", "payments", "videos", "cms", "audit",
   "automation", "ai", "settings",
 ];
 
@@ -144,6 +146,8 @@ export function DashboardPage() {
           return <CandidateImmigration />;
         case "payments":
           return <CandidatePayments />;
+        case "videos":
+          return <CandidateVideos />;
         case "notifications":
           return <CandidateNotifications />;
         case "settings":
@@ -250,6 +254,8 @@ export function DashboardPage() {
           return <AdminImmigration />;
         case "payments":
           return <AdminPayments />;
+        case "videos":
+          return <AdminVideos />;
         case "settings":
           return <AdminSettings />;
         default:

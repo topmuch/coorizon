@@ -67,3 +67,6 @@ tool-results/
 *.png
 .zscripts/
 coorizon-home.png
+
+# Uploaded files (videos, documents, etc.)
+uploads/

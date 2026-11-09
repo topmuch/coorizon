@@ -13,6 +13,7 @@ import {
   Award,
   Plane,
   CreditCard,
+  Video,
   MessageSquare,
   Bell,
   Settings,
@@ -41,6 +42,7 @@ export type DashboardSection =
   | "certificates"
   | "immigration"
   | "payments"
+  | "videos"
   | "messages"
   | "notifications"
   | "settings";
@@ -64,6 +66,7 @@ export const candidateNav: NavSection[] = [
   { id: "certificates", label: "Mes certificats", icon: Award, lot: "LOT 6" },
   { id: "immigration", label: "Mon dossier administratif", icon: Plane },
   { id: "payments", label: "Mes paiements", icon: CreditCard },
+  { id: "videos", label: "Médiathèque", icon: Video },
   { id: "messages", label: "Messagerie", icon: MessageSquare, lot: "LOT 9" },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "settings", label: "Paramètres", icon: Settings },

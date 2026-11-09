@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Zap,
   Bot,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export type AdminSection =
   | "audit"
   | "automation"
   | "ai"
+  | "videos"
   | "settings";
 
 export interface AdminNavSection {
@@ -65,6 +67,7 @@ export const adminNav: AdminNavSection[] = [
   { id: "audit", label: "Journaux d'audit", icon: ScrollText },
   { id: "automation", label: "Automatisations", icon: Zap },
   { id: "ai", label: "Assistant IA", icon: Bot },
+  { id: "videos", label: "Médiathèque", icon: Video },
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
 
