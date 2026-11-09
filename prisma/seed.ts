@@ -56,6 +56,7 @@ async function main() {
   // Seed demo companies + published job offers (dev only).
   if (process.env.NODE_ENV !== "production") {
     await seedJobs();
+    await seedValidatedRecruiter();
   }
 }
 
@@ -184,6 +185,64 @@ async function seedJobs() {
     });
   }
   console.log(`✓ Seeded ${offers.length} published job offers.`);
+}
+
+/**
+ * Seed a VALIDATED recruiter + company so the LOT 4 recruiter space is testable.
+ * The existing recruiter@coorizon.com stays Pending (to test the pending screen);
+ * this new one is fully validated.
+ */
+async function seedValidatedRecruiter() {
+  const email = "recruteur.valide@coorizon.com";
+  const existing = await db.user.findUnique({ where: { email }, select: { id: true } });
+  if (existing) {
+    console.log("✓ Validated recruiter already exists (recruteur.valide@coorizon.com).");
+    return;
+  }
+
+  let company = await db.company.findFirst({ where: { legalName: "Ristorante Bella Toscana S.r.l." } });
+  if (!company) {
+    company = await db.company.create({
+      data: {
+        legalName: "Ristorante Bella Toscana S.r.l.",
+        registrationNumber: "IT055-FI-001",
+        city: "Florence",
+        region: "Toscane",
+        sector: "Hôtellerie & Restauration",
+        size: "30-50",
+        status: "Validated",
+        validatedAt: new Date(),
+      },
+    });
+  } else if (company.status !== "Validated") {
+    company = await db.company.update({
+      where: { id: company.id },
+      data: { status: "Validated", validatedAt: new Date() },
+    });
+  }
+
+  const passwordHash = await hashPassword("Recruteur2024!");
+  await db.user.create({
+    data: {
+      email,
+      passwordHash,
+      role: ROLES.Recruiter,
+      status: "Active",
+      isActive: true,
+      firstName: "Giulia",
+      lastName: "Rossi",
+      recruiterProfile: {
+        create: {
+          companyId: company.id,
+          responsibleName: "Giulia Rossi",
+          responsibleEmail: email,
+          responsiblePhone: "+39 055 123456",
+          jobTitle: "Responsable RH",
+        },
+      },
+    },
+  });
+  console.log("✓ Validated recruiter ready: recruteur.valide@coorizon.com / Recruteur2024!");
 }
 
 main()

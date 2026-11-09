@@ -12,14 +12,25 @@ import { CandidateJobs } from "../dashboard/candidate-jobs";
 import { CandidateApplications } from "../dashboard/candidate-applications";
 import { CandidateSettings } from "../dashboard/candidate-settings";
 import { ComingSoonCard } from "../dashboard/coming-soon";
+import { RecruiterShell, RecruiterPendingScreen, type RecruiterSection } from "../dashboard/recruiter-shell";
+import { RecruiterOverview } from "../dashboard/recruiter-overview";
+import { RecruiterCompany } from "../dashboard/recruiter-company";
+import { RecruiterOffers } from "../dashboard/recruiter-offers";
+import { RecruiterApplications } from "../dashboard/recruiter-applications";
+import { RecruiterInterviews } from "../dashboard/recruiter-interviews";
+import { RecruiterSettings } from "../dashboard/recruiter-settings";
 
-const VALID_SECTIONS: DashboardSection[] = [
+const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
   "training", "exams", "certificates", "immigration", "messages",
   "notifications", "settings",
 ];
 
-const LOT_MAP: Record<string, string> = {
+const RECRUITER_SECTIONS: RecruiterSection[] = [
+  "overview", "company", "offers", "applications", "interviews", "settings",
+];
+
+const CANDIDATE_LOT_MAP: Record<string, string> = {
   training: "LOT 6 — Formation en italien",
   exams: "LOT 6 — Formation en italien",
   certificates: "LOT 6 — Formation en italien",
@@ -31,9 +42,6 @@ const LOT_MAP: Record<string, string> = {
 export function DashboardPage() {
   const { params, navigate } = useSiteRouter();
   const { user, loading } = useSession();
-
-  const section = (params.get("section") as DashboardSection) || "overview";
-  const validSection = VALID_SECTIONS.includes(section) ? section : "overview";
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -53,43 +61,94 @@ export function DashboardPage() {
     return null;
   }
 
-  // LOT 3 builds the candidate space. Other roles see a placeholder.
-  if (user.role !== "Candidate") {
+  // ── Candidate space (LOT 3) ──────────────────────────────────────────
+  if (user.role === "Candidate") {
+    const section = (params.get("section") as DashboardSection) || "overview";
+    const validSection = CANDIDATE_SECTIONS.includes(section) ? section : "overview";
+
+    const renderSection = () => {
+      switch (validSection) {
+        case "overview":
+          return <CandidateOverview />;
+        case "profile":
+          return <CandidateProfile />;
+        case "cv":
+          return <CandidateCv />;
+        case "documents":
+          return <CandidateDocuments />;
+        case "jobs":
+          return <CandidateJobs />;
+        case "applications":
+          return <CandidateApplications />;
+        case "settings":
+          return <CandidateSettings />;
+        default:
+          return <ComingSoonCard lot={CANDIDATE_LOT_MAP[validSection] ?? "Un lot à venir"} />;
+      }
+    };
+
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface px-4">
-        <div className="max-w-md text-center">
-          <h1 className="text-2xl font-bold text-navy">Espace en préparation</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Votre espace {user.role} sera disponible dans un lot à venir. En attendant,
-            vous pouvez consulter le site public.
-          </p>
-        </div>
-      </div>
+      <CandidateShell section={validSection}>{renderSection()}</CandidateShell>
     );
   }
 
-  const renderSection = () => {
-    switch (validSection) {
-      case "overview":
-        return <CandidateOverview />;
-      case "profile":
-        return <CandidateProfile />;
-      case "cv":
-        return <CandidateCv />;
-      case "documents":
-        return <CandidateDocuments />;
-      case "jobs":
-        return <CandidateJobs />;
-      case "applications":
-        return <CandidateApplications />;
-      case "settings":
-        return <CandidateSettings />;
-      default:
-        return <ComingSoonCard lot={LOT_MAP[validSection] ?? "Un lot à venir"} />;
+  // ── Recruiter space (LOT 4) ──────────────────────────────────────────
+  if (user.role === "Recruiter") {
+    // Pending recruiters (company not yet validated) see a waiting screen.
+    if (user.status === "Pending") {
+      return <RecruiterPendingScreen />;
     }
-  };
+    if (user.status !== "Active") {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-bold text-navy">Compte indisponible</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Votre compte recruteur est actuellement {user.status === "Suspended" ? "suspendu" : "désactivé"}.
+              Contactez l'administration COORIZON.
+            </p>
+          </div>
+        </div>
+      );
+    }
 
+    const section = (params.get("section") as RecruiterSection) || "overview";
+    const validSection = RECRUITER_SECTIONS.includes(section) ? section : "overview";
+
+    const renderSection = () => {
+      switch (validSection) {
+        case "overview":
+          return <RecruiterOverview />;
+        case "company":
+          return <RecruiterCompany />;
+        case "offers":
+          return <RecruiterOffers />;
+        case "applications":
+          return <RecruiterApplications />;
+        case "interviews":
+          return <RecruiterInterviews />;
+        case "settings":
+          return <RecruiterSettings />;
+        default:
+          return <RecruiterOverview />;
+      }
+    };
+
+    return (
+      <RecruiterShell section={validSection}>{renderSection()}</RecruiterShell>
+    );
+  }
+
+  // ── Other roles (Trainer, Agents, Admin) — placeholder until later lots
   return (
-    <CandidateShell section={validSection}>{renderSection()}</CandidateShell>
+    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-2xl font-bold text-navy">Espace en préparation</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Votre espace ({user.role}) sera disponible dans un lot à venir. En attendant,
+          vous pouvez consulter le site public.
+        </p>
+      </div>
+    </div>
   );
 }

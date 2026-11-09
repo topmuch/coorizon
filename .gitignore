@@ -62,3 +62,8 @@ prisma/*.db-journal
 # Agent context
 agent-ctx/
 tool-results/
+
+# Screenshots & temp files
+*.png
+.zscripts/
+coorizon-home.png
