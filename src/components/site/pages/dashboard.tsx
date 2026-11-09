@@ -19,6 +19,15 @@ import { RecruiterOffers } from "../dashboard/recruiter-offers";
 import { RecruiterApplications } from "../dashboard/recruiter-applications";
 import { RecruiterInterviews } from "../dashboard/recruiter-interviews";
 import { RecruiterSettings } from "../dashboard/recruiter-settings";
+import { AdminShell, type AdminSection } from "../dashboard/admin-shell";
+import { AdminOverview } from "../dashboard/admin-overview";
+import { AdminUsers } from "../dashboard/admin-users";
+import { AdminCompanies } from "../dashboard/admin-companies";
+import { AdminOffers } from "../dashboard/admin-offers";
+import { AdminApplications } from "../dashboard/admin-applications";
+import { AdminCms } from "../dashboard/admin-cms";
+import { AdminAudit } from "../dashboard/admin-audit";
+import { AdminSettings } from "../dashboard/admin-settings";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
@@ -29,6 +38,17 @@ const CANDIDATE_SECTIONS: DashboardSection[] = [
 const RECRUITER_SECTIONS: RecruiterSection[] = [
   "overview", "company", "offers", "applications", "interviews", "settings",
 ];
+
+const ADMIN_SECTIONS: AdminSection[] = [
+  "overview", "users", "companies", "offers", "applications",
+  "training", "immigration", "payments", "cms", "audit", "settings",
+];
+
+const ADMIN_LOT_MAP: Record<string, string> = {
+  training: "LOT 6 — Formation en italien",
+  immigration: "LOT 7 — Dossiers administratifs & immigration",
+  payments: "LOT 8 — Paiements & notifications",
+};
 
 const CANDIDATE_LOT_MAP: Record<string, string> = {
   training: "LOT 6 — Formation en italien",
@@ -139,7 +159,54 @@ export function DashboardPage() {
     );
   }
 
-  // ── Other roles (Trainer, Agents, Admin) — placeholder until later lots
+  // ── Admin / SuperAdmin space (LOT 5) ──────────────────────────────
+  if (user.role === "Admin" || user.role === "SuperAdmin") {
+    if (user.status !== "Active") {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-bold text-navy">Compte indisponible</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Votre compte administrateur est actuellement {user.status === "Suspended" ? "suspendu" : "désactivé"}.
+              Contactez un super administrateur.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const section = (params.get("section") as AdminSection) || "overview";
+    const validSection = ADMIN_SECTIONS.includes(section) ? section : "overview";
+
+    const renderSection = () => {
+      switch (validSection) {
+        case "overview":
+          return <AdminOverview />;
+        case "users":
+          return <AdminUsers />;
+        case "companies":
+          return <AdminCompanies />;
+        case "offers":
+          return <AdminOffers />;
+        case "applications":
+          return <AdminApplications />;
+        case "cms":
+          return <AdminCms />;
+        case "audit":
+          return <AdminAudit />;
+        case "settings":
+          return <AdminSettings />;
+        default:
+          return <ComingSoonCard lot={ADMIN_LOT_MAP[validSection] ?? "Un lot à venir"} />;
+      }
+    };
+
+    return (
+      <AdminShell section={validSection}>{renderSection()}</AdminShell>
+    );
+  }
+
+  // ── Other roles (Trainer, Agents) — placeholder until later lots
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <div className="max-w-md text-center">
