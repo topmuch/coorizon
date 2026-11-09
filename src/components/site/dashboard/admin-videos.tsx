@@ -964,6 +964,8 @@ function AssignDialog({
   const [targetId, setTargetId] = React.useState("");
   const [level, setLevel] = React.useState<Level>("A1");
   const [adding, setAdding] = React.useState(false);
+  const [candidates, setCandidates] = React.useState<{ id: string; firstName: string | null; lastName: string | null; email: string }[]>([]);
+  const [courses, setCourses] = React.useState<{ id: string; title: string; level: string }[]>([]);
 
   const loadAssignments = React.useCallback(async () => {
     setLoading(true);
@@ -984,25 +986,31 @@ function AssignDialog({
 
   React.useEffect(() => {
     loadAssignments();
+    // Load candidates and courses for the dropdowns
+    fetch("/api/admin/users?role=Candidate&pageSize=100", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setCandidates(d.users || []))
+      .catch(() => {});
+    fetch("/api/admin/training", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setCourses(d.courses || []))
+      .catch(() => {});
   }, [loadAssignments]);
 
   const handleAdd = async () => {
     let payloadTargetId: string | null = null;
     if (targetType === "candidate") {
-      if (!targetId.trim()) {
-        toast({
-          variant: "destructive",
-          title: "ID candidat requis.",
-        });
+      if (!targetId) {
+        toast({ variant: "destructive", title: "Sélectionnez un candidat." });
         return;
       }
-      payloadTargetId = targetId.trim();
+      payloadTargetId = targetId;
     } else if (targetType === "course") {
-      if (!targetId.trim()) {
-        toast({ variant: "destructive", title: "ID cours requis." });
+      if (!targetId) {
+        toast({ variant: "destructive", title: "Sélectionnez un cours." });
         return;
       }
-      payloadTargetId = targetId.trim();
+      payloadTargetId = targetId;
     } else if (targetType === "level") {
       payloadTargetId = level;
     }
@@ -1066,11 +1074,16 @@ function AssignDialog({
 
   const describeAssignment = (a: VideoAssignment): string => {
     if (a.targetType === "all") return TARGET_LABEL.all;
-    if (a.targetType === "level")
-      return `Niveau ${a.targetId ?? ""}`;
-    if (a.targetType === "course")
-      return `Cours ${a.targetId ?? ""}`;
-    return `Candidat ${a.targetId ?? ""}`;
+    if (a.targetType === "level") return `Niveau ${a.targetId ?? ""}`;
+    if (a.targetType === "course") {
+      const course = courses.find((c) => c.id === a.targetId);
+      return course ? `${course.title} (${course.level})` : `Cours ${a.targetId?.slice(0, 8) ?? ""}...`;
+    }
+    if (a.targetType === "candidate") {
+      const cand = candidates.find((c) => c.id === a.targetId);
+      return cand ? `${cand.firstName} ${cand.lastName}` : `Candidat ${a.targetId?.slice(0, 8) ?? ""}...`;
+    }
+    return a.targetId ?? "";
   };
 
   return (
@@ -1164,27 +1177,39 @@ function AssignDialog({
             {targetType === "candidate" && (
               <div className="space-y-1.5">
                 <Label htmlFor="tgt-id" className="text-xs">
-                  ID du candidat
+                  Candidat
                 </Label>
-                <Input
-                  id="tgt-id"
-                  value={targetId}
-                  onChange={(e) => setTargetId(e.target.value)}
-                  placeholder="userId"
-                />
+                <Select value={targetId} onValueChange={setTargetId}>
+                  <SelectTrigger id="tgt-id" className="w-full">
+                    <SelectValue placeholder="Sélectionnez un candidat..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {candidates.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.firstName} {c.lastName} ({c.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
             {targetType === "course" && (
               <div className="space-y-1.5">
                 <Label htmlFor="tgt-course" className="text-xs">
-                  ID du cours
+                  Formation
                 </Label>
-                <Input
-                  id="tgt-course"
-                  value={targetId}
-                  onChange={(e) => setTargetId(e.target.value)}
-                  placeholder="courseId"
-                />
+                <Select value={targetId} onValueChange={setTargetId}>
+                  <SelectTrigger id="tgt-course" className="w-full">
+                    <SelectValue placeholder="Sélectionnez une formation..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.title} ({c.level})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
             {targetType === "level" && (
