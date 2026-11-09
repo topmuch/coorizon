@@ -1,0 +1,33 @@
+# COORIZON — Docker Compose for Coolify deployment
+# This file can be used directly in Coolify's Docker Compose deployment type.
+
+services:
+  coorizon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coorizon
+    restart: unless-stopped
+    ports:
+      - "3000"
+    environment:
+      - DATABASE_URL=file:/app/data/coorizon.db
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-to-a-strong-secret}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - APP_NAME=COORIZON
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    volumes:
+      - coorizon-data:/app/data
+      - coorizon-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  coorizon-data:
+  coorizon-uploads:
