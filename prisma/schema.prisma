@@ -884,3 +884,41 @@ model BlogArticle {
   @@index([isPublished])
   @@index([category])
 }
+
+// =====================================================================
+// 30. AUTOMATION EVENTS (journal des événements pour N8N & intégrations)
+// =====================================================================
+
+model AutomationEvent {
+  id            String   @id @default(cuid())
+  type          String   // e.g. "candidate.registered", "application.created", "payment.confirmed"
+  targetType    String?  // e.g. "User", "Application", "Payment"
+  targetId      String?
+  actorId       String?
+  payload       String   // JSON string with event details
+  webhookStatus String?  // "pending" | "delivered" | "failed" | "skipped"
+  webhookError  String?
+  deliveredAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+  @@index([webhookStatus])
+}
+
+// =====================================================================
+// 31. WEBHOOK CONFIG (URLs N8N / intégrations externes)
+// =====================================================================
+
+model WebhookConfig {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  eventTypes  String   // comma-separated event types this webhook listens to, or "*" for all
+  secret      String?  // shared secret for HMAC signature verification
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+}

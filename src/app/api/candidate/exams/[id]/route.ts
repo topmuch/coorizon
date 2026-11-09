@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/auth/audit";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
 import { ROLES } from "@/lib/permissions";
+import { fireEvent, EVENTS } from "@/lib/automation";
+import { notify } from "@/lib/notifications";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -237,6 +239,28 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       targetId: attempt.id,
       metadata: { exerciseId: exercise.id, score, maxScore, passed },
       req,
+    });
+
+    // Fire the automation event (logs to journal + dispatches to webhooks) and
+    // notify the candidate of the result.
+    await fireEvent({
+      type: passed ? EVENTS.EXAM_PASSED : EVENTS.EXAM_FAILED,
+      targetType: "ExamAttempt",
+      targetId: attempt.id,
+      actorId: session.user.id,
+      payload: {
+        exerciseId: exercise.id,
+        score,
+        maxScore,
+        passed,
+      },
+      notifyUserId: candidateId,
+      notifyType: passed ? "Success" : "Warning",
+      notifyTitle: passed ? "Examen réussi" : "Examen non réussi",
+      notifyMessage: passed
+        ? `Félicitations ! Vous avez réussi l'examen « ${exercise.title} » avec ${percentage}%.`
+        : `Vous n'avez pas réussi l'examen « ${exercise.title} » (${percentage}%). Vous pouvez le repasser.`,
+      notifyLink: "/candidate/my-training",
     });
 
     return Response.json({ attempt, explanations }, { status: 201 });

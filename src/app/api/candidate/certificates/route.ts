@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
 import { audit } from "@/lib/auth/audit";
 import { ROLES } from "@/lib/permissions";
+import { fireEvent, EVENTS } from "@/lib/automation";
 
 /**
  * Certificate generation API (LOT 6 — E-learning).
@@ -274,6 +275,24 @@ export async function POST(req: NextRequest): Promise<Response> {
         score: certificate.score,
       },
       req,
+    });
+
+    // Fire the automation event (logs to journal + dispatches to webhooks) and
+    // notify the candidate that the certificate is available.
+    await fireEvent({
+      type: EVENTS.CERTIFICATE_AVAILABLE,
+      targetType: "Certificate",
+      targetId: certificate.id,
+      actorId: session.user.id,
+      payload: {
+        certificateNumber: certificate.certificateNumber,
+        courseName: certificate.courseName,
+      },
+      notifyUserId: candidateId,
+      notifyType: "Success",
+      notifyTitle: "Attestation disponible",
+      notifyMessage: `Votre attestation est disponible: ${certificate.certificateNumber}`,
+      notifyLink: "/candidate/certificates",
     });
 
     return Response.json({ certificate }, { status: 201 });

@@ -50,6 +50,8 @@ import { AgentCandidates } from "../dashboard/agent-candidates";
 import { AgentSettings } from "../dashboard/agent-settings";
 import { AdminImmigration } from "../dashboard/admin-immigration";
 import { AdminPayments } from "../dashboard/admin-payments";
+import { AdminAutomation } from "../dashboard/admin-automation";
+import { AdminAi } from "../dashboard/admin-ai";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
@@ -63,7 +65,8 @@ const RECRUITER_SECTIONS: RecruiterSection[] = [
 
 const ADMIN_SECTIONS: AdminSection[] = [
   "overview", "users", "companies", "offers", "applications",
-  "training", "immigration", "payments", "cms", "audit", "settings",
+  "training", "immigration", "payments", "cms", "audit",
+  "automation", "ai", "settings",
 ];
 
 const ADMIN_LOT_MAP: Record<string, string> = {
@@ -236,6 +239,10 @@ export function DashboardPage() {
           return <AdminCms />;
         case "audit":
           return <AdminAudit />;
+        case "automation":
+          return <AdminAutomation />;
+        case "ai":
+          return <AdminAi />;
         case "immigration":
           return <AdminImmigration />;
         case "payments":

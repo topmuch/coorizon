@@ -14,6 +14,8 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
+  Zap,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,8 @@ export type AdminSection =
   | "payments"
   | "cms"
   | "audit"
+  | "automation"
+  | "ai"
   | "settings";
 
 export interface AdminNavSection {
@@ -58,6 +62,8 @@ export const adminNav: AdminNavSection[] = [
   { id: "payments", label: "Commercial", icon: CreditCard, lot: "LOT 8" },
   { id: "cms", label: "Contenu (CMS)", icon: FileText },
   { id: "audit", label: "Journaux d'audit", icon: ScrollText },
+  { id: "automation", label: "Automatisations", icon: Zap },
+  { id: "ai", label: "Assistant IA", icon: Bot },
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
 

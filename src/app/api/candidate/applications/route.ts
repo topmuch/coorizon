@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/auth/audit";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
 import { ROLES } from "@/lib/permissions";
+import { fireEvent, EVENTS } from "@/lib/automation";
+import { notify, notifyMany } from "@/lib/notifications";
 
 /**
  * GET /api/candidate/applications
@@ -141,6 +143,42 @@ export async function POST(req: NextRequest) {
       metadata: { jobOfferId },
       req,
     });
+
+    // Fire the automation event (logs to journal + dispatches to webhooks).
+    await fireEvent({
+      type: EVENTS.APPLICATION_CREATED,
+      targetType: "Application",
+      targetId: application.id,
+      actorId: session.user.id,
+      payload: { jobOfferId, candidateId: session.user.id },
+    });
+
+    // Notify the candidate that the application was sent.
+    await notify({
+      userId: candidateId,
+      type: "Success",
+      title: "Candidature envoyée",
+      message: `Votre candidature pour l'offre « ${offer.title} » a été envoyée.`,
+      link: "/candidate/applications",
+    });
+
+    // Notify all recruiters of the company that owns the offer.
+    const recruiters = await db.user.findMany({
+      where: {
+        role: ROLES.Recruiter,
+        recruiterProfile: { companyId: application.jobOffer.companyId },
+      },
+      select: { id: true },
+    });
+    if (recruiters.length > 0) {
+      await notifyMany({
+        userIds: recruiters.map((r) => r.id),
+        type: "Info",
+        title: "Nouvelle candidature",
+        message: `Nouvelle candidature pour votre offre: ${offer.title}`,
+        link: "/recruiter/applications",
+      });
+    }
 
     return Response.json({ application }, { status: 201 });
   } catch (error) {

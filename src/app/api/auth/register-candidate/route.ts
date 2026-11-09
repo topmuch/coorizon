@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { hashPassword, validatePasswordPolicy, validateEmail } from "@/lib/auth/password";
 import { ROLES } from "@/lib/permissions";
 import { audit } from "@/lib/auth/audit";
+import { fireEvent, EVENTS } from "@/lib/automation";
 
 /**
  * POST /api/auth/register-candidate
@@ -82,6 +83,21 @@ export async function POST(req: NextRequest) {
       targetId: user.id,
       metadata: { email: user.email },
       req,
+    });
+
+    // Fire the automation event (logs to journal + dispatches to webhooks) and
+    // welcome the candidate with an in-app notification.
+    await fireEvent({
+      type: EVENTS.CANDIDATE_REGISTERED,
+      targetType: "User",
+      targetId: user.id,
+      actorId: user.id,
+      payload: { email: user.email, firstName: user.firstName },
+      notifyUserId: user.id,
+      notifyType: "Success",
+      notifyTitle: "Bienvenue sur COORIZON !",
+      notifyMessage: "Votre compte candidat a été créé.",
+      notifyLink: "/candidate",
     });
 
     return Response.json(

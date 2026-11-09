@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword, validatePasswordPolicy, validateEmail } from "@/lib/auth/password";
-import { ROLES } from "@/lib/permissions";
+import { ROLES, ADMIN_ROLES } from "@/lib/permissions";
 import { audit } from "@/lib/auth/audit";
+import { fireEvent, EVENTS } from "@/lib/automation";
+import { notifyMany } from "@/lib/notifications";
 
 /**
  * POST /api/auth/register-recruiter
@@ -122,6 +124,33 @@ export async function POST(req: NextRequest) {
       },
       req,
     });
+
+    // Fire the automation event (logs to journal + dispatches to webhooks).
+    await fireEvent({
+      type: EVENTS.COMPANY_REGISTERED,
+      targetType: "Company",
+      targetId: result.company.id,
+      actorId: result.user.id,
+      payload: {
+        companyName: result.company.legalName,
+        email: result.user.email,
+      },
+    });
+
+    // Notify all admins that a new company awaits validation.
+    const adminUsers = await db.user.findMany({
+      where: { role: { in: ADMIN_ROLES as string[] } },
+      select: { id: true },
+    });
+    if (adminUsers.length > 0) {
+      await notifyMany({
+        userIds: adminUsers.map((u) => u.id),
+        type: "Warning",
+        title: "Nouvelle entreprise à valider",
+        message: `Nouvelle entreprise en attente de validation: ${result.company.legalName}`,
+        link: "/admin/companies",
+      });
+    }
 
     return Response.json(
       {
