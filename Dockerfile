@@ -45,6 +45,9 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apk add --no-cache libc6-compat openssl
 
+# Install npm globally (needed for npx) and install prisma + tsx globally
+RUN npm install -g prisma tsx
+
 # Create data directory for SQLite
 RUN mkdir -p /app/data /app/uploads
 
@@ -64,24 +67,17 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
-# Copy seed script
+# Copy seed script + lib
 COPY --from=builder /app/prisma/seed.ts ./prisma/seed.ts
 COPY --from=builder /app/src/lib ./src/lib
 
-# Copy package.json for scripts
+# Copy package.json for tsx config
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Create startup script
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo 'set -e' >> /app/start.sh && \
-    echo 'echo "→ Running database migrations..."' >> /app/start.sh && \
-    echo 'npx prisma db push --accept-data-loss' >> /app/start.sh && \
-    echo 'echo "→ Seeding database (if needed)..."' >> /app/start.sh && \
-    echo 'npx tsx prisma/seed.ts || echo "Seed skipped (may already exist)"' >> /app/start.sh && \
-    echo 'echo "→ Starting COORIZON..."' >> /app/start.sh && \
-    echo 'exec node server.js' >> /app/start.sh && \
+RUN printf '#!/bin/sh\nset -e\necho "→ Running database migrations..."\nprisma db push --accept-data-loss\necho "→ Seeding database (if needed)..."\nnode --import tsx prisma/seed.ts || echo "Seed skipped (may already exist)"\necho "→ Starting COORIZON..."\nexec node server.js\n' > /app/start.sh && \
     chmod +x /app/start.sh
 
 EXPOSE 3000
