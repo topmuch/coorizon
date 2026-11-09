@@ -582,25 +582,9 @@ function VideoPlayerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Player */}
-        <div className="overflow-hidden rounded-md border bg-black">
-          {video.type === "youtube" && video.embedId ? (
-            <iframe
-              src={`https://www.youtube.com/embed/${video.embedId}?rel=0`}
-              className="w-full aspect-video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title={video.title}
-            />
-          ) : video.type === "vimeo" && video.embedId ? (
-            <iframe
-              src={`https://player.vimeo.com/video/${video.embedId}`}
-              className="w-full aspect-video"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              title={video.title}
-            />
-          ) : video.type === "mp4" ? (
+        {/* Player — MP4 plays inline, YouTube/Vimeo redirect to external site */}
+        {video.type === "mp4" ? (
+          <div className="overflow-hidden rounded-md border bg-black">
             <video
               ref={videoRef}
               src={video.url}
@@ -608,12 +592,51 @@ function VideoPlayerDialog({
               className="w-full aspect-video"
               preload="metadata"
             />
-          ) : (
-            <div className="flex aspect-video w-full items-center justify-center text-muted-foreground">
-              <Film className="h-10 w-10" />
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-md border">
+            {/* Thumbnail with play button → opens YouTube/Vimeo in new tab */}
+            <a
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative block aspect-video w-full bg-black"
+            >
+              {getThumbnail(video) ? (
+                <img
+                  src={getThumbnail(video) || ""}
+                  alt={video.title}
+                  className="h-full w-full object-cover opacity-90"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                  {typeIcon(video.type, "h-10 w-10")}
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors hover:bg-black/40">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg transition-transform hover:scale-110">
+                  {video.type === "youtube" ? (
+                    <Youtube className="h-8 w-8 text-white" />
+                  ) : (
+                    <PlayCircle className="h-8 w-8 text-white" />
+                  )}
+                </div>
+              </div>
+            </a>
+            <div className="flex items-center justify-center gap-2 bg-muted/50 px-4 py-3">
+              <Button
+                size="sm"
+                onClick={() => window.open(video.url, "_blank", "noopener,noreferrer")}
+              >
+                {video.type === "youtube" ? <Youtube className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
+                Regarder sur {video.type === "youtube" ? "YouTube" : "Vimeo"}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                S'ouvre dans un nouvel onglet
+              </span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Description */}
         {video.description && (
