@@ -74,7 +74,7 @@ export function SiteHeader() {
           className="flex items-center transition-opacity hover:opacity-80"
           aria-label="Accueil COORIZON"
         >
-          <Logo />
+          <Logo size="sm" />
         </button>
 
         {/* Desktop nav */}

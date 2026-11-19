@@ -7,23 +7,24 @@ import {
   LatestOffersSection,
   TrainingSection,
   JourneySection,
-  PartnersSection,
   TestimonialsSection,
   FaqPreviewSection,
   FinalCtaSection,
 } from "../sections/home-sections";
+import { PartenariatSection } from "../sections/partenariat";
 
 export function HomePage() {
   return (
     <>
       <HeroSection />
-      <LatestOffersSection />
       <StatsBand />
+      <LatestOffersSection />
       <SectorsSection />
       <TrainingSection />
       <JourneySection />
       <TestimonialsSection />
       <FaqPreviewSection />
+      <PartenariatSection />
       <FinalCtaSection />
     </>
   );
