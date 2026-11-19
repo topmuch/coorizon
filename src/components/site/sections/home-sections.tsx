@@ -11,6 +11,11 @@ import {
   Plane,
   Users,
   ShieldCheck,
+  Languages,
+  Scale,
+  HardHat,
+  Award,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,11 +38,11 @@ import {
 
 export function StatsBand() {
   const features = [
-    { emoji: "🇮🇹", bg: "bg-green-100 dark:bg-green-950/40", title: "Langue italienne", desc: "Apprentissage et préparation linguistique" },
-    { emoji: "⚖️", bg: "bg-blue-100 dark:bg-blue-950/40", title: "Éducation civique", desc: "Comprendre vos droits et vos devoirs" },
-    { emoji: "🦺", bg: "bg-amber-100 dark:bg-amber-950/40", title: "Sécurité au travail", desc: "Travailler en toute sécurité" },
-    { emoji: "🏆", bg: "bg-purple-100 dark:bg-purple-950/40", title: "Certification des compétences", desc: "Valorisez votre savoir-faire" },
-    { emoji: "🎓", bg: "bg-red-100 dark:bg-red-950/40", title: "Enseignement en visioconférence", desc: "par nos universités partenaires italiennes" },
+    { icon: Languages, bg: "bg-gradient-to-br from-green-500 to-green-700", title: "Langue italienne", desc: "Apprentissage et préparation linguistique" },
+    { icon: Scale, bg: "bg-gradient-to-br from-blue-500 to-blue-700", title: "Éducation civique", desc: "Comprendre vos droits et vos devoirs" },
+    { icon: HardHat, bg: "bg-gradient-to-br from-amber-500 to-orange-600", title: "Sécurité au travail", desc: "Travailler en toute sécurité" },
+    { icon: Award, bg: "bg-gradient-to-br from-purple-500 to-purple-700", title: "Certification des compétences", desc: "Valorisez votre savoir-faire" },
+    { icon: Video, bg: "bg-gradient-to-br from-red-500 to-rose-700", title: "Enseignement en visioconférence", desc: "par nos universités partenaires italiennes" },
   ];
 
   return (
@@ -45,9 +50,9 @@ export function StatsBand() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {features.map((f, i) => (
-            <div key={i} className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${f.bg}`}>
-                {f.emoji}
+            <div key={i} className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${f.bg}`}>
+                <f.icon className="h-6 w-6" strokeWidth={2.2} />
               </div>
               <div>
                 <div className="text-sm font-semibold text-navy">{f.title}</div>
