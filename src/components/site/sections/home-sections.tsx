@@ -199,8 +199,8 @@ export function JourneySection() {
         title={<span className="text-white">De l'inscription au départ en Italie</span>}
         description={
           <span className="text-slate-300">
-            Un processus structuré et transparent, de la création de votre profil jusqu'à votre intégration
-            professionnelle en Italie.
+            Apprenez l'italien, trouvez votre opportunité professionnelle et construisez votre avenir en Italie.
+            Nous vous accompagnons de la formation linguistique jusqu'à la recherche d'un emploi.
           </span>
         }
       />
