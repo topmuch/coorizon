@@ -17,6 +17,7 @@ import {
   Download,
   Trash2,
   Loader2,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -475,7 +476,106 @@ export function AdminSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ─── WhatsApp Numbers ─── */}
+      <WhatsAppSettingsCard />
     </div>
+  );
+}
+
+function WhatsAppSettingsCard() {
+  const { toast } = useToast();
+  const [numbers, setNumbers] = React.useState([
+    { service: "Service Client", number: "221710907070", label: "Service Client" },
+    { service: "Facturation", number: "221710907071", label: "Facturation" },
+    { service: "Formation", number: "221710907072", label: "Formation" },
+  ]);
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    fetch("/api/settings/whatsapp?admin=true", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => { if (d.numbers) setNumbers(d.numbers); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/settings/whatsapp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ numbers }),
+      });
+      if (!res.ok) throw new Error("Échec de la sauvegarde.");
+      toast({ title: "Numéros WhatsApp mis à jour" });
+    } catch {
+      toast({ variant: "destructive", title: "Erreur" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <MessageCircle className="h-5 w-5 text-[#25D366]" />
+          Numéros WhatsApp
+        </CardTitle>
+        <CardDescription>
+          Configurez les numéros de téléphone pour le bouton flottant WhatsApp.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading ? (
+          <Skeleton className="h-20 w-full" />
+        ) : (
+          numbers.map((num, i) => (
+            <div key={i} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Service</Label>
+                <Input
+                  value={num.label}
+                  onChange={(e) => {
+                    const next = [...numbers];
+                    next[i] = { ...num, label: e.target.value, service: e.target.value };
+                    setNumbers(next);
+                  }}
+                  placeholder="Nom du service"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Numéro (format international sans +)</Label>
+                <Input
+                  value={num.number}
+                  onChange={(e) => {
+                    const next = [...numbers];
+                    next[i] = { ...num, number: e.target.value.replace(/[^0-9]/g, "") };
+                    setNumbers(next);
+                  }}
+                  placeholder="221710907070"
+                />
+              </div>
+            </div>
+          ))
+        )}
+        <Button onClick={handleSave} disabled={saving || loading}>
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+          Enregistrer les numéros
+        </Button>
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Ces numéros apparaîtront sur le bouton flottant WhatsApp visible par tous les visiteurs.
+            Le format doit être international sans le "+" (ex: 221710907070 pour le Sénégal).
+          </AlertDescription>
+        </Alert>
+      </CardContent>
+    </Card>
   );
 }
 

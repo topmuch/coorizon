@@ -109,10 +109,10 @@ export function LatestOffersSection() {
               Offres d'emploi en Italie
             </span>
             <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-balance sm:text-4xl lg:text-5xl">
-              Plus de 600 offres actives auprès d'entreprises italiennes partenaires
+              Apprenez l'italien, trouvez votre opportunité professionnelle et construisez votre avenir en Italie.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-200 sm:text-lg text-balance">
-              Hôtellerie, santé, BTP, agriculture, logistique — COORIZON vous connecte aux entreprises italiennes qui recrutent des talents d'Afrique de l'Ouest.
+              Nous vous accompagnons de la formation linguistique jusqu'à la recherche d'un emploi.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button

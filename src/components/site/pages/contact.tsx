@@ -41,8 +41,8 @@ const subjects = [
 ];
 
 const contactInfo = [
-  { icon: MapPin, label: "Adresse", value: "Plateau, Dakar — Sénégal" },
-  { icon: Phone, label: "Téléphone", value: "+221 33 800 00 00" },
+  { icon: MapPin, label: "Adresse", value: "Sicap Liberté 4 N°5260, Dakar — Sénégal" },
+  { icon: Phone, label: "Téléphone", value: "+221 71 090 70 70" },
   { icon: Mail, label: "Email", value: "contact@coorizon.com" },
   { icon: Clock, label: "Horaires", value: "Lun–Ven, 9h–18h" },
 ];
@@ -329,6 +329,18 @@ export function ContactPage() {
               </form>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Google Maps — large, below the form */}
+        <div className="mt-8 overflow-hidden rounded-xl border border-border shadow-sm">
+          <iframe
+            src="https://www.google.com/maps?q=Sicap+Liberte+4+Dakar+Senegal&output=embed"
+            className="h-[400px] w-full sm:h-[450px]"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="COORIZON — Sicap Liberté 4, Dakar"
+          />
         </div>
       </SectionShell>
     </>

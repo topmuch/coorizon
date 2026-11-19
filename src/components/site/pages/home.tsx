@@ -22,7 +22,6 @@ export function HomePage() {
       <SectorsSection />
       <TrainingSection />
       <JourneySection />
-      <PartnersSection />
       <TestimonialsSection />
       <FaqPreviewSection />
       <FinalCtaSection />

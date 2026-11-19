@@ -20,7 +20,6 @@ const candidateLinks: FooterLink[] = [
 
 const companyLinks: FooterLink[] = [
   { label: "Inscription recruteur", route: "register-recruiter" },
-  { label: "Nos entreprises partenaires", route: "partners" },
   { label: "À propos", route: "about" },
   { label: "FAQ", route: "faq" },
   { label: "Contact", route: "contact" },
@@ -89,11 +88,11 @@ export function SiteFooter() {
             <ul className="mt-4 space-y-3 text-sm">
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-green" />
-                <span className="text-slate-300">Plateau, Dakar — Sénégal</span>
+                <span className="text-slate-300">Sicap Liberté 4 N°5260, Dakar — Sénégal</span>
               </li>
               <li className="flex items-start gap-3">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-brand-green" />
-                <span className="text-slate-300">+221 33 800 00 00</span>
+                <span className="text-slate-300">+221 71 090 70 70</span>
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-brand-green" />

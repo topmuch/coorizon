@@ -18,6 +18,7 @@ import { FaqPage } from "./pages/faq";
 import { ContactPage } from "./pages/contact";
 import { DashboardPage } from "./pages/dashboard";
 import { AiAssistantWidget } from "./ai-assistant-widget";
+import { WhatsAppWidget } from "./whatsapp-widget";
 
 function PageRenderer() {
   const { route } = useSiteRouter();
@@ -69,6 +70,7 @@ function PageRenderer() {
       <main className="flex-1">{page}</main>
       {!isDashboard && <SiteFooter />}
       {isDashboard && <AiAssistantWidget />}
+      {!isDashboard && <WhatsAppWidget />}
     </div>
   );
 }
