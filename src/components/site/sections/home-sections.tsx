@@ -32,20 +32,30 @@ import {
 } from "@/lib/site-data";
 
 export function StatsBand() {
+  const features = [
+    { icon: GraduationCap, title: "Langue italienne", desc: "Apprentissage et préparation linguistique" },
+    { icon: Users, title: "Éducation civique", desc: "Comprendre vos droits et vos devoirs" },
+    { icon: ShieldCheck, title: "Sécurité au travail", desc: "Travailler en toute sécurité" },
+    { icon: CheckCircle2, title: "Certification des compétences", desc: "Valorisez votre savoir-faire" },
+    { icon: Briefcase, title: "Enseignement en visioconférence", desc: "par nos universités partenaires italiennes" },
+  ];
+
   return (
     <div className="border-b border-border bg-surface">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px overflow-hidden px-4 sm:px-6 lg:grid-cols-4 lg:px-8">
-        {stats.map((s) => (
-          <div key={s.label} className="flex items-center gap-3 py-6 lg:justify-center">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
-              <s.icon className="h-5 w-5" />
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {features.map((f, i) => (
+            <div key={i} className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                <f.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-navy">{f.title}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{f.desc}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-navy">{s.value}</div>
-              <div className="text-xs text-muted-foreground">{s.label}</div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
