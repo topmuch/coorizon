@@ -24,32 +24,31 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-navy text-white">
-      {/* Background layers */}
-      <div className="absolute inset-0 bg-hero-radial" aria-hidden="true" />
-      <div className="absolute inset-0 bg-grid opacity-40" aria-hidden="true" />
-      <div
-        className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-brand/30 blur-3xl"
-        aria-hidden="true"
+    <section className="relative overflow-hidden">
+      {/* Background image */}
+      <img
+        src="/coorizon-banner.png"
+        alt="COORIZON — Votre avenir professionnel en Italie"
+        className="absolute inset-0 h-full w-full object-cover"
       />
-      <div
-        className="absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-brand-green/25 blur-3xl"
-        aria-hidden="true"
-      />
+      {/* Dark overlay calque */}
+      <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/75 to-navy/50" />
+      <div className="absolute inset-0 bg-gradient-to-t from-navy/70 to-transparent" />
 
+      {/* Content */}
       <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-medium text-slate-100 backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-brand-green" />
             Recrutement · Formation en italien · Accompagnement
           </span>
-          <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-balance sm:text-5xl lg:text-6xl">
+          <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-white text-balance sm:text-5xl lg:text-6xl">
             Votre avenir professionnel{" "}
-            <span className="bg-gradient-to-r from-brand via-brand to-brand-green bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-brand-green via-brand to-brand-green bg-clip-text text-transparent">
               commence ici.
             </span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-200 text-balance">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/90 text-balance">
             COORIZON vous accompagne dans votre projet professionnel en Italie grâce à la formation
             linguistique, au recrutement et à l'accompagnement personnalisé.
           </p>
@@ -77,7 +76,7 @@ export function HeroSection() {
         {/* Job search engine */}
         <form
           onSubmit={onSearch}
-          className="mx-auto mt-12 max-w-4xl rounded-2xl border border-white/15 bg-white p-4 shadow-2xl shadow-navy/40 sm:p-5"
+          className="mx-auto mt-12 max-w-4xl rounded-2xl border border-white/15 bg-white p-4 shadow-2xl sm:p-5"
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
             <div className="md:col-span-5">

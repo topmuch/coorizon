@@ -4,7 +4,6 @@ import { HeroSection } from "../sections/hero";
 import {
   StatsBand,
   SectorsSection,
-  LatestOffersSection,
   TrainingSection,
   JourneySection,
   TestimonialsSection,
@@ -18,7 +17,6 @@ export function HomePage() {
     <>
       <HeroSection />
       <StatsBand />
-      <LatestOffersSection />
       <SectorsSection />
       <TrainingSection />
       <JourneySection />
