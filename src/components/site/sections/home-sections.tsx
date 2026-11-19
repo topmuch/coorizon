@@ -89,26 +89,53 @@ export function SectorsSection() {
 export function LatestOffersSection() {
   const { navigate } = useSiteRouter();
   return (
-    <SectionShell className="bg-surface">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <SectionHeading
-          align="left"
-          eyebrow="Offres récentes"
-          title="Les dernières offres d'emploi"
-          description="Une sélection d'opportunités publiées par nos entreprises partenaires en Italie."
-          className="max-w-xl"
-        />
-        <Button variant="outline" onClick={() => navigate("jobs")} className="shrink-0">
-          Toutes les offres
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+    <section className="relative overflow-hidden">
+      {/* Image de fond */}
+      <img
+        src="/coorizon-banner.png"
+        alt="COORIZON — Votre avenir professionnel en Italie"
+        className="h-[400px] w-full object-cover sm:h-[500px]"
+      />
+      {/* Calque overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/70 to-navy/40" />
+      <div className="absolute inset-0 bg-gradient-to-t from-navy/60 to-transparent" />
+
+      {/* Contenu par-dessus */}
+      <div className="absolute inset-0 flex items-center">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl text-white">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider backdrop-blur">
+              <Briefcase className="h-3.5 w-3.5" />
+              Offres d'emploi en Italie
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-balance sm:text-4xl lg:text-5xl">
+              Plus de 600 offres actives auprès d'entreprises italiennes partenaires
+            </h2>
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-200 sm:text-lg text-balance">
+              Hôtellerie, santé, BTP, agriculture, logistique — COORIZON vous connecte aux entreprises italiennes qui recrutent des talents d'Afrique de l'Ouest.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button
+                size="lg"
+                onClick={() => navigate("jobs")}
+                className="bg-brand hover:bg-brand/90"
+              >
+                Voir les offres
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate("register-candidate")}
+                className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              >
+                Je suis candidat
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {jobOffers.slice(0, 6).map((offer) => (
-          <JobOfferCard key={offer.id} offer={offer} />
-        ))}
-      </div>
-    </SectionShell>
+    </section>
   );
 }
 

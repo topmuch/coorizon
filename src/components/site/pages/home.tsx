@@ -4,6 +4,7 @@ import { HeroSection } from "../sections/hero";
 import {
   StatsBand,
   SectorsSection,
+  LatestOffersSection,
   TrainingSection,
   JourneySection,
   PartnersSection,
@@ -18,6 +19,7 @@ export function HomePage() {
       <HeroSection />
       <StatsBand />
       <SectorsSection />
+      <LatestOffersSection />
       <TrainingSection />
       <JourneySection />
       <PartnersSection />
