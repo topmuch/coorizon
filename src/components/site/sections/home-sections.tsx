@@ -63,6 +63,15 @@ export function StatsBand() {
 
 export function SectorsSection() {
   const { navigate } = useSiteRouter();
+
+  // KPI stats with logo colors (green #1E8236, gold #D4A017, navy #0D3B1A)
+  const kpis = [
+    { value: "3 200+", label: "Candidats accompagnés", color: "bg-brand", textColor: "text-white" },
+    { value: "610+", label: "Offres d'emploi actives", color: "bg-brand-green", textColor: "text-white" },
+    { value: "180+", label: "Entreprises partenaires", color: "bg-navy", textColor: "text-white" },
+    { value: "94%", label: "Taux de réussite", color: "bg-gold", textColor: "text-navy" },
+  ];
+
   return (
     <SectionShell>
       <SectionHeading
@@ -70,7 +79,22 @@ export function SectorsSection() {
         title="Des opportunités dans tous les secteurs porteurs"
         description="COORIZON collabore avec des entreprises italiennes de toutes tailles, des exploitations agricoles aux groupes industriels, en passant par l'hôtellerie et la santé."
       />
-      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+      {/* KPI cards with logo colors */}
+      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {kpis.map((kpi, i) => (
+          <div
+            key={i}
+            className={`${kpi.color} ${kpi.textColor} flex flex-col items-center justify-center rounded-2xl p-6 shadow-lg transition-transform hover:-translate-y-1`}
+          >
+            <div className="text-3xl font-extrabold tracking-tight sm:text-4xl">{kpi.value}</div>
+            <div className="mt-1.5 text-center text-xs font-medium opacity-90 sm:text-sm">{kpi.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Sector cards */}
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {sectors.map((sector) => (
           <button
             key={sector.slug}
