@@ -17,9 +17,9 @@ export function HomePage() {
   return (
     <>
       <HeroSection />
+      <LatestOffersSection />
       <StatsBand />
       <SectorsSection />
-      <LatestOffersSection />
       <TrainingSection />
       <JourneySection />
       <PartnersSection />
