@@ -17,19 +17,21 @@ import {
   MessageSquare,
   Bell,
   Settings,
+  ShoppingCart,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSiteRouter } from "@/lib/site-router";
 import { useSession } from "@/lib/auth/session-provider";
 import { useCandidateAccess } from "@/lib/candidate-access";
+import { formatAmount } from "@/lib/format-currency";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { Logo } from "../logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, LogOut, Moon, Sun, Lock } from "lucide-react";
+import { Menu, LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export type DashboardSection =
@@ -47,7 +49,8 @@ export type DashboardSection =
   | "videos"
   | "messages"
   | "notifications"
-  | "settings";
+  | "settings"
+  | "forfait";
 
 export interface NavSection {
   id: DashboardSection;
@@ -74,6 +77,34 @@ export const candidateNav: NavSection[] = [
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
 
+/**
+ * The dedicated "Forfait" tab: always first in the restricted navigation so
+ * the purchase action stands out for candidates without full access.
+ */
+const FORFAIT_NAV: NavSection = { id: "forfait", label: "Forfait", icon: ShoppingCart };
+
+/**
+ * Sections accessible to a candidate whose formation forfait has not been
+ * bought/validated yet — profile, CV, messaging, notifications, settings,
+ * plus the "Forfait" purchase tab. Every other module stays hidden until the
+ * administration validates the payment.
+ */
+export const UNPAID_ALLOWED_SECTIONS: DashboardSection[] = [
+  "forfait",
+  "profile",
+  "cv",
+  "messages",
+  "notifications",
+  "settings",
+];
+
+const restrictedNav: NavSection[] = [
+  FORFAIT_NAV,
+  ...candidateNav.filter((item) =>
+    UNPAID_ALLOWED_SECTIONS.includes(item.id)
+  ),
+];
+
 interface CandidateShellProps {
   section: DashboardSection;
   children: React.ReactNode;
@@ -86,13 +117,11 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
   const { access } = useCandidateAccess();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  // Sections locked until the formation forfait is validated by the
-  // administration. The nav still navigates — the gated section itself
-  // renders the ForfaitGate purchase screen.
-  const isGatedItem = (item: NavSection) =>
-    access !== null &&
-    !access.hasFormationAccess &&
-    (item.id === "jobs" || item.id === "training");
+  // Candidates without the validated formation forfait see a reduced
+  // navigation: profile, CV, messaging, notifications, settings and the
+  // Forfait tab. All other modules are hidden until the payment is validated.
+  const hasFullAccess = access?.hasFormationAccess ?? true;
+  const navItems = hasFullAccess ? candidateNav : restrictedNav;
 
   const initials = user
     ? ((user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")).toUpperCase() || user.email[0].toUpperCase()
@@ -124,12 +153,21 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
             </Badge>
           </div>
         </div>
+        {!hasFullAccess && (
+          <Badge
+            className="mt-2 w-fit border border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300"
+            variant="outline"
+          >
+            Accès limité — forfait requis
+          </Badge>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 custom-scrollbar">
         <ul className="space-y-0.5">
-          {candidateNav.map((item) => {
+          {navItems.map((item) => {
             const active = section === item.id;
+            const isForfaitItem = item.id === "forfait" && !hasFullAccess;
             return (
               <li key={item.id}>
                 <button
@@ -138,18 +176,31 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
                     active
                       ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    isForfaitItem &&
+                      !active &&
+                      "border border-amber-300 bg-amber-50/70 text-amber-900 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
                   )}
+                  aria-current={active ? "page" : undefined}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className={cn("h-4 w-4 shrink-0", isForfaitItem && !active && "text-amber-600 dark:text-amber-400")} />
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.lot && !active && (
                     <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
                       {item.lot}
                     </span>
                   )}
-                  {isGatedItem(item) && (
-                    <Lock className="ml-auto h-3.5 w-3.5 text-amber-500" />
+                  {isForfaitItem && access && (
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                        active
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                      )}
+                    >
+                      {formatAmount(access.forfait.amount, access.forfait.currency)}
+                    </span>
                   )}
                 </button>
               </li>
@@ -175,7 +226,7 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
     </div>
   );
 
-  const activeItem = candidateNav.find((n) => n.id === section);
+  const activeItem = navItems.find((n) => n.id === section) ?? candidateNav.find((n) => n.id === section);
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,7 +267,7 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
           <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
             <span>Espace candidat</span>
             <span>/</span>
-            <span className="font-medium text-navy">{activeItem?.label}</span>
+            <span className="font-medium text-navy dark:text-foreground">{activeItem?.label}</span>
           </div>
           {children}
         </main>

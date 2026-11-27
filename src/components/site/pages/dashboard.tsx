@@ -3,7 +3,12 @@
 import * as React from "react";
 import { useSiteRouter } from "@/lib/site-router";
 import { useSession } from "@/lib/auth/session-provider";
-import { CandidateShell, type DashboardSection } from "../dashboard/candidate-shell";
+import {
+  CandidateShell,
+  UNPAID_ALLOWED_SECTIONS,
+  type DashboardSection,
+} from "../dashboard/candidate-shell";
+import { CandidateForfait } from "../dashboard/candidate-forfait";
 import { CandidateOverview } from "../dashboard/candidate-overview";
 import { CandidateProfile } from "../dashboard/candidate-profile";
 import { CandidateDocuments } from "../dashboard/candidate-documents";
@@ -57,13 +62,13 @@ import { AdminAi } from "../dashboard/admin-ai";
 import { AdminTraining } from "../dashboard/admin-training";
 import { AdminVideos } from "../dashboard/admin-videos";
 import { CandidateVideos } from "../dashboard/candidate-videos";
-import { CandidateAccessProvider } from "@/lib/candidate-access";
+import { CandidateAccessProvider, useCandidateAccess } from "@/lib/candidate-access";
 import { ForfaitGate } from "../dashboard/candidate-forfait-gate";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
   "training", "exams", "certificates", "immigration", "payments",
-  "videos", "messages", "notifications", "settings",
+  "videos", "messages", "notifications", "settings", "forfait",
 ];
 
 const RECRUITER_SECTIONS: RecruiterSection[] = [
@@ -99,6 +104,87 @@ const CANDIDATE_LOT_MAP: Record<string, string> = {
   notifications: "LOT 8 — Notifications & messagerie",
 };
 
+/**
+ * Candidate dashboard body.
+ *
+ * Until the formation forfait has been bought AND validated by the
+ * administration, the candidate only sees a restricted set of sections
+ * (profil, CV, messagerie, notifications, paramètres) plus the dedicated
+ * "Forfait" tab — every other module is hidden and any direct access
+ * redirects to the Forfait tab.
+ */
+function CandidateDashboard() {
+  const { params } = useSiteRouter();
+  const { access, loading } = useCandidateAccess();
+
+  const requested = (params.get("section") as DashboardSection) || "overview";
+  const validSection = CANDIDATE_SECTIONS.includes(requested) ? requested : "overview";
+
+  const isUnpaid = !loading && access !== null && !access.hasFormationAccess;
+  const section: DashboardSection =
+    isUnpaid && !UNPAID_ALLOWED_SECTIONS.includes(validSection)
+      ? "forfait"
+      : validSection;
+
+  const renderSection = () => {
+    switch (section) {
+      case "overview":
+        return <CandidateOverview />;
+      case "profile":
+        return <CandidateProfile />;
+      case "cv":
+        return <CandidateCv />;
+      case "documents":
+        return <CandidateDocuments />;
+      case "jobs":
+        return (
+          <ForfaitGate>
+            <CandidateJobs />
+          </ForfaitGate>
+        );
+      case "applications":
+        return <CandidateApplications />;
+      case "training":
+        return (
+          <ForfaitGate>
+            <CandidateMyTraining />
+          </ForfaitGate>
+        );
+      case "exams":
+        return <CandidateExams />;
+      case "certificates":
+        return <CandidateCertificates />;
+      case "immigration":
+        return <CandidateImmigration />;
+      case "payments":
+        return <CandidatePayments />;
+      case "videos":
+        return <CandidateVideos />;
+      case "messages":
+        return <CandidateMessaging />;
+      case "notifications":
+        return <CandidateNotifications />;
+      case "settings":
+        return <CandidateSettings />;
+      case "forfait":
+        return <CandidateForfait />;
+      default:
+        return <ComingSoonCard lot={CANDIDATE_LOT_MAP[section] ?? "Un lot à venir"} context="votre espace candidat" />;
+    }
+  };
+
+  // Access status is being fetched — avoid flashing the full navigation.
+  if (loading && !access) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+      </div>
+    );
+  }
+
+  return <CandidateShell section={section}>{renderSection()}</CandidateShell>;
+}
+
 export function DashboardPage() {
   const { params, navigate } = useSiteRouter();
   const { user, loading } = useSession();
@@ -123,57 +209,9 @@ export function DashboardPage() {
 
   // ── Candidate space (LOT 3) ──────────────────────────────────────────
   if (user.role === "Candidate") {
-    const section = (params.get("section") as DashboardSection) || "overview";
-    const validSection = CANDIDATE_SECTIONS.includes(section) ? section : "overview";
-
-    const renderSection = () => {
-      switch (validSection) {
-        case "overview":
-          return <CandidateOverview />;
-        case "profile":
-          return <CandidateProfile />;
-        case "cv":
-          return <CandidateCv />;
-        case "documents":
-          return <CandidateDocuments />;
-        case "jobs":
-          return (
-            <ForfaitGate>
-              <CandidateJobs />
-            </ForfaitGate>
-          );
-        case "applications":
-          return <CandidateApplications />;
-        case "training":
-          return (
-            <ForfaitGate>
-              <CandidateMyTraining />
-            </ForfaitGate>
-          );
-        case "exams":
-          return <CandidateExams />;
-        case "certificates":
-          return <CandidateCertificates />;
-        case "immigration":
-          return <CandidateImmigration />;
-        case "payments":
-          return <CandidatePayments />;
-        case "videos":
-          return <CandidateVideos />;
-        case "messages":
-          return <CandidateMessaging />;
-        case "notifications":
-          return <CandidateNotifications />;
-        case "settings":
-          return <CandidateSettings />;
-        default:
-          return <ComingSoonCard lot={CANDIDATE_LOT_MAP[validSection] ?? "Un lot à venir"} context="votre espace candidat" />;
-      }
-    };
-
     return (
       <CandidateAccessProvider>
-        <CandidateShell section={validSection}>{renderSection()}</CandidateShell>
+        <CandidateDashboard />
       </CandidateAccessProvider>
     );
   }
