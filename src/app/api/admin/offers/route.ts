@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/permissions";
+import { audit } from "@/lib/auth/audit";
 
 /**
  * Admin job offers list API (LOT 5 — Task 5-c).
@@ -127,6 +128,48 @@ export async function GET(req: NextRequest) {
     ]);
 
     return Response.json({ offers, total, page, pageSize });
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+}
+
+/**
+ * DELETE /api/admin/offers
+ * Permanently delete ALL job offers across ALL companies, along with their
+ * applications (interviews and application history included). Companies,
+ * recruiters and candidate accounts are NOT touched.
+ * Admin / SuperAdmin only. Audit-logged as `admin.offer.delete_all`.
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await requireSession();
+    if (!isAdmin(session.user.role)) {
+      return Response.json(
+        { error: "Accès réservé aux administrateurs." },
+        { status: 403 }
+      );
+    }
+
+    const deleted = await db.$transaction(async (tx) => {
+      await tx.interview.deleteMany({});
+      await tx.applicationHistory.deleteMany({});
+      const applications = await tx.application.deleteMany({});
+      const jobOffers = await tx.jobOffer.deleteMany({});
+      return {
+        offers: jobOffers.count,
+        applications: applications.count,
+      };
+    });
+
+    await audit({
+      actorId: session.user.id,
+      action: "admin.offer.delete_all",
+      targetType: "JobOffer",
+      metadata: deleted,
+      req,
+    });
+
+    return Response.json({ ok: true, deleted });
   } catch (error) {
     return authErrorResponse(error);
   }

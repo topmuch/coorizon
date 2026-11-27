@@ -133,13 +133,81 @@ function formatEuro(value: number): string {
 // Stat card
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Stat card tones — multicolor KPI palette (one vivid color per indicator)
+// ---------------------------------------------------------------------------
+
+type StatTone =
+  | "emerald"
+  | "amber"
+  | "teal"
+  | "rose"
+  | "violet"
+  | "lime"
+  | "orange"
+  | "gold";
+
+const STAT_TONES: Record<
+  StatTone,
+  { card: string; box: string; value: string }
+> = {
+  emerald: {
+    card:
+      "border-l-4 border-emerald-500 bg-gradient-to-br from-emerald-50 to-card dark:from-emerald-500/10 dark:to-card",
+    box: "bg-emerald-500 text-white shadow-sm",
+    value: "text-emerald-800 dark:text-emerald-300",
+  },
+  amber: {
+    card:
+      "border-l-4 border-amber-500 bg-gradient-to-br from-amber-50 to-card dark:from-amber-500/10 dark:to-card",
+    box: "bg-amber-500 text-white shadow-sm",
+    value: "text-amber-800 dark:text-amber-300",
+  },
+  teal: {
+    card:
+      "border-l-4 border-teal-500 bg-gradient-to-br from-teal-50 to-card dark:from-teal-500/10 dark:to-card",
+    box: "bg-teal-500 text-white shadow-sm",
+    value: "text-teal-800 dark:text-teal-300",
+  },
+  rose: {
+    card:
+      "border-l-4 border-rose-500 bg-gradient-to-br from-rose-50 to-card dark:from-rose-500/10 dark:to-card",
+    box: "bg-rose-500 text-white shadow-sm",
+    value: "text-rose-800 dark:text-rose-300",
+  },
+  violet: {
+    card:
+      "border-l-4 border-violet-500 bg-gradient-to-br from-violet-50 to-card dark:from-violet-500/10 dark:to-card",
+    box: "bg-violet-500 text-white shadow-sm",
+    value: "text-violet-800 dark:text-violet-300",
+  },
+  lime: {
+    card:
+      "border-l-4 border-lime-500 bg-gradient-to-br from-lime-50 to-card dark:from-lime-500/10 dark:to-card",
+    box: "bg-lime-500 text-white shadow-sm",
+    value: "text-lime-800 dark:text-lime-300",
+  },
+  orange: {
+    card:
+      "border-l-4 border-orange-500 bg-gradient-to-br from-orange-50 to-card dark:from-orange-500/10 dark:to-card",
+    box: "bg-orange-500 text-white shadow-sm",
+    value: "text-orange-800 dark:text-orange-300",
+  },
+  gold: {
+    card:
+      "border-l-4 border-gold bg-gradient-to-br from-yellow-50 to-card dark:from-yellow-500/10 dark:to-card",
+    box: "bg-gold text-navy shadow-sm",
+    value: "text-yellow-700 dark:text-yellow-300",
+  },
+};
+
 interface StatCardProps {
   label: string;
   value: string;
   subtitle?: string;
   subtitleClass?: string;
   icon: LucideIcon;
-  iconBoxClass: string;
+  tone: StatTone;
   onClick?: () => void;
 }
 
@@ -149,9 +217,10 @@ function StatCard({
   subtitle,
   subtitleClass,
   icon: Icon,
-  iconBoxClass,
+  tone,
   onClick,
 }: StatCardProps) {
+  const toneMeta = STAT_TONES[tone];
   const clickable = Boolean(onClick);
   return (
     <Card
@@ -171,6 +240,7 @@ function StatCard({
       }
       className={cn(
         "h-full py-5",
+        toneMeta.card,
         clickable &&
           "cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       )}
@@ -180,13 +250,18 @@ function StatCard({
           aria-hidden
           className={cn(
             "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg",
-            iconBoxClass
+            toneMeta.box
           )}
         >
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <div className="text-2xl font-bold leading-tight text-navy">
+          <div
+            className={cn(
+              "text-2xl font-bold leading-tight",
+              toneMeta.value
+            )}
+          >
             {value}
           </div>
           <div className="mt-0.5 truncate text-sm text-muted-foreground">
@@ -383,14 +458,14 @@ export function AdminOverview() {
       subtitleClass:
         totals.newCandidates > 0 ? "text-brand-green" : "text-muted-foreground",
       icon: Users,
-      iconBoxClass: "bg-brand/10 text-brand",
+      tone: "emerald",
       onClick: () => navigate("dashboard", { section: "users" }),
     },
     {
       label: "Recruteurs",
       value: formatNumber(totals.recruiters),
       icon: Briefcase,
-      iconBoxClass: "bg-navy/10 text-navy",
+      tone: "amber",
       onClick: () => navigate("dashboard", { section: "users" }),
     },
     {
@@ -405,7 +480,7 @@ export function AdminOverview() {
           ? "text-italian-red"
           : "text-muted-foreground",
       icon: Building2,
-      iconBoxClass: "bg-brand-green/10 text-brand-green",
+      tone: "teal",
       onClick: () => navigate("dashboard", { section: "companies" }),
     },
     {
@@ -420,21 +495,21 @@ export function AdminOverview() {
           ? "text-italian-red"
           : "text-muted-foreground",
       icon: TrendingUp,
-      iconBoxClass: "bg-brand/10 text-brand",
+      tone: "rose",
       onClick: () => navigate("dashboard", { section: "offers" }),
     },
     {
       label: "Candidatures",
       value: formatNumber(totals.totalApplications),
       icon: Send,
-      iconBoxClass: "bg-navy/10 text-navy",
+      tone: "violet",
       onClick: () => navigate("dashboard", { section: "applications" }),
     },
     {
       label: "Recrutements finalisés",
       value: formatNumber(totals.recruitmentsFinalized),
       icon: CheckCircle2,
-      iconBoxClass: "bg-brand-green/10 text-brand-green",
+      tone: "lime",
       onClick: () => navigate("dashboard", { section: "applications" }),
     },
     {
@@ -443,7 +518,7 @@ export function AdminOverview() {
       subtitle: `${formatNumber(totals.enrollments)} inscriptions au total`,
       subtitleClass: "text-muted-foreground",
       icon: GraduationCap,
-      iconBoxClass: "bg-brand/10 text-brand",
+      tone: "orange",
       onClick: () => navigate("dashboard", { section: "training" }),
     },
     {
@@ -454,7 +529,7 @@ export function AdminOverview() {
       } payé${totals.payments > 1 ? "s" : ""}`,
       subtitleClass: "text-brand-green",
       icon: Euro,
-      iconBoxClass: "bg-brand-green/10 text-brand-green",
+      tone: "gold",
       onClick: () => navigate("dashboard", { section: "payments" }),
     },
   ];

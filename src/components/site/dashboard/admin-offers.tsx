@@ -24,6 +24,7 @@ import {
   ArrowRight,
   AlertCircle,
   RefreshCw,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -241,6 +242,14 @@ export function AdminOffers() {
   // Add offer dialog
   const [showAddDialog, setShowAddDialog] = React.useState(false);
 
+  // Delete (single) confirmation state
+  const [deleteOffer, setDeleteOffer] = React.useState<Offer | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
+
+  // Delete ALL confirmation state
+  const [deleteAllOpen, setDeleteAllOpen] = React.useState(false);
+  const [deletingAll, setDeletingAll] = React.useState(false);
+
   // ── Fetch offers list ───────────────────────────────────────────────
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -348,6 +357,72 @@ export function AdminOffers() {
     setCloseOffer(null);
   };
 
+  // ── Delete single offer (DELETE /api/admin/offers/[id]) ──────────────
+  const handleDelete = async () => {
+    if (!deleteOffer) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/offers/${deleteOffer.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "Échec de la suppression de l'offre.");
+      }
+      toast({
+        title: "Offre supprimée",
+        description: `L'offre « ${deleteOffer.title} » et ses candidatures ont été supprimées.`,
+      });
+      if (detailOffer?.id === deleteOffer.id) {
+        setDetailOpen(false);
+        setDetailOffer(null);
+      }
+      setDeleteOffer(null);
+      void load();
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // ── Delete ALL offers (DELETE /api/admin/offers) ─────────────────────
+  const handleDeleteAll = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await fetch("/api/admin/offers", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "Échec de la suppression des offres.");
+      }
+      toast({
+        title: "Offres supprimées",
+        description:
+          "Toutes les offres d'emploi et leurs candidatures ont été supprimées.",
+      });
+      setDetailOpen(false);
+      setDetailOffer(null);
+      setDeleteAllOpen(false);
+      void load();
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -355,11 +430,24 @@ export function AdminOffers() {
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-2xl font-bold text-navy">Offres d'emploi</h1>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Ajouter une offre</span>
-            <span className="sm:hidden">Ajouter</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteAllOpen(true)}
+              disabled={loading || offers.length === 0}
+              className="border-italian-red/40 text-italian-red hover:bg-italian-red/10 hover:text-italian-red"
+              title="Supprimer toutes les offres"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Tout supprimer</span>
+              <span className="sm:hidden">Tout</span>
+            </Button>
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Ajouter une offre</span>
+              <span className="sm:hidden">Ajouter</span>
+            </Button>
+          </div>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Validez et publiez les offres soumises par les entreprises, suspendez
@@ -461,6 +549,7 @@ export function AdminOffers() {
                       onSuspend={() => setSuspendOffer(offer)}
                       onRepublish={() => updateStatus(offer, "Published")}
                       onClose={() => setCloseOffer(offer)}
+                      onDelete={() => setDeleteOffer(offer)}
                       onView={() => openDetail(offer)}
                     />
                   ))}
@@ -481,6 +570,7 @@ export function AdminOffers() {
                   onSuspend={() => setSuspendOffer(offer)}
                   onRepublish={() => updateStatus(offer, "Published")}
                   onClose={() => setCloseOffer(offer)}
+                  onDelete={() => setDeleteOffer(offer)}
                   onView={() => openDetail(offer)}
                 />
               </li>
@@ -625,6 +715,108 @@ export function AdminOffers() {
       </AlertDialog>
 
       {/* ─── Add offer dialog ───────────────────────────────────────────── */}
+      {/* Delete single confirm */}
+      <AlertDialog
+        open={!!deleteOffer}
+        onOpenChange={(open) => {
+          if (!open && !deleting) {
+            setDeleteOffer(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-navy">
+              <Trash2 className="h-5 w-5 text-italian-red" />
+              Supprimer cette offre ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteOffer && (
+                <>
+                  L'offre « <strong>{deleteOffer.title}</strong> » sera
+                  définitivement supprimée, ainsi que ses{" "}
+                  {deleteOffer._count?.applications ?? 0} candidature
+                  {(deleteOffer._count?.applications ?? 0) > 1 ? "s" : ""} et
+                  leurs entretiens. Cette action est irréversible.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDelete();
+              }}
+              disabled={deleting}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer définitivement
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete ALL confirm */}
+      <AlertDialog
+        open={deleteAllOpen}
+        onOpenChange={(open) => {
+          if (!open && !deletingAll) {
+            setDeleteAllOpen(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-navy">
+              <Trash2 className="h-5 w-5 text-italian-red" />
+              Supprimer toutes les offres ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Les {offers.length} offre{offers.length > 1 ? "s" : ""} affichée
+              {offers.length > 1 ? "s" : ""} (tous statuts) seront
+              définitivement supprimées, ainsi que toutes leurs candidatures,
+              entretiens et historiques. Les entreprises et les comptes ne sont
+              pas touchés. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAll}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteAll();
+              }}
+              disabled={deletingAll}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {deletingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Tout supprimer
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -688,6 +880,7 @@ interface OfferActionsProps {
   onSuspend: () => void;
   onRepublish: () => void;
   onClose: () => void;
+  onDelete: () => void;
   onView: () => void;
 }
 
@@ -699,6 +892,7 @@ function OfferActions({
   onSuspend,
   onRepublish,
   onClose,
+  onDelete,
   onView,
 }: OfferActionsProps) {
   return (
@@ -793,6 +987,18 @@ function OfferActions({
           <span className="lg:sr-only">Clôturer</span>
         </Button>
       )}
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onDelete}
+        disabled={changing}
+        className="text-italian-red hover:bg-italian-red/10 hover:text-italian-red"
+        title="Supprimer l'offre définitivement"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        Supprimer
+      </Button>
     </div>
   );
 }

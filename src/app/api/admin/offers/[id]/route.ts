@@ -189,3 +189,67 @@ export async function PUT(
     return authErrorResponse(error);
   }
 }
+
+/**
+ * DELETE /api/admin/offers/[id]
+ * Permanently delete a single offer along with its applications
+ * (interviews and application history are removed as well).
+ * Admin / SuperAdmin only. Audit-logged as `admin.offer.delete`.
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await requireSession();
+    if (!isAdmin(session.user.role)) {
+      return Response.json(
+        { error: "Accès réservé aux administrateurs." },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    const result = await db.$transaction(async (tx) => {
+      const offer = await tx.jobOffer.findUnique({
+        where: { id },
+        select: { id: true, title: true, companyId: true },
+      });
+      if (!offer) return null;
+
+      await tx.interview.deleteMany({
+        where: { application: { jobOfferId: id } },
+      });
+      await tx.applicationHistory.deleteMany({
+        where: { application: { jobOfferId: id } },
+      });
+      const applications = await tx.application.deleteMany({
+        where: { jobOfferId: id },
+      });
+      await tx.jobOffer.delete({ where: { id } });
+
+      return { offer, applications: applications.count };
+    });
+
+    if (!result) {
+      return Response.json({ error: "Offre introuvable." }, { status: 404 });
+    }
+
+    await audit({
+      actorId: session.user.id,
+      action: "admin.offer.delete",
+      targetType: "JobOffer",
+      targetId: id,
+      metadata: {
+        title: result.offer.title,
+        applicationsDeleted: result.applications,
+      },
+      req,
+    });
+
+    return Response.json({ ok: true, deleted: result });
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+}

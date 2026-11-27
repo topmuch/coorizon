@@ -124,6 +124,13 @@
   --sidebar-ring: #2da64d;
 }
 
+/* Dark-mode readability: `text-navy` is a dark forest green tuned for light
+   backgrounds. On dark surfaces it becomes unreadable, so remap it to a soft
+   light-green tint (bg-navy usages are NOT affected). */
+.dark .text-navy {
+  color: #cfe8d5;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
