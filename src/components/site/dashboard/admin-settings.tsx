@@ -313,6 +313,9 @@ export function AdminSettings() {
       {/* Connection profiles access (Admin & SuperAdmin) */}
       <RoleAccessCard />
 
+      {/* Emails & notifications (Admin & SuperAdmin) */}
+      <NotificationSettingsCard />
+
       {/* General settings (SuperAdmin only) */}
       <Card>
         <CardHeader>
@@ -498,6 +501,340 @@ export function AdminSettings() {
   );
 }
 
+// ─── Emails & notifications card ────────────────────────────────────────────
+
+interface NotificationConfig {
+  emailEnabled: boolean;
+  emailRegistration: boolean;
+  emailPayment: boolean;
+  emailMessages: boolean;
+  adminAlerts: boolean;
+  alertRecipient: string;
+}
+
+interface EmailLogEntry {
+  id: string;
+  toEmail: string;
+  subject: string;
+  template: string;
+  status: string;
+  provider: string;
+  createdAt: string;
+}
+
+const TEMPLATE_LABELS: Record<string, string> = {
+  registration: "Inscription",
+  payment: "Paiement",
+  message: "Message",
+  account: "Compte",
+  forfait: "Forfait",
+};
+
+const EMAIL_TEMPLATES = ["registration", "payment", "message", "account"] as const;
+
+/**
+ * Email & notification switches (SuperAdmin settings) plus the journal of
+ * the latest notification emails recorded by the platform.
+ */
+function NotificationSettingsCard() {
+  const { toast } = useToast();
+
+  const [config, setConfig] = React.useState<NotificationConfig | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+  const [pendingSwitch, setPendingSwitch] = React.useState<string | null>(null);
+
+  // Email journal
+  const [emails, setEmails] = React.useState<EmailLogEntry[]>([]);
+  const [emailsLoading, setEmailsLoading] = React.useState(true);
+  const [templateFilter, setTemplateFilter] = React.useState<string>("all");
+  const [showJournal, setShowJournal] = React.useState(false);
+
+  const fetchConfig = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/settings/notifications", { credentials: "include" });
+      if (!res.ok) throw new Error("Échec du chargement des paramètres.");
+      const data = (await res.json()) as { notifications: NotificationConfig };
+      setConfig(data.notifications);
+    } catch {
+      setConfig(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchEmails = React.useCallback(async (filter: string) => {
+    setEmailsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/emails?template=${filter}&take=50`, { credentials: "include" });
+      if (!res.ok) throw new Error();
+      const data = (await res.json()) as { emails: EmailLogEntry[] };
+      setEmails(data.emails);
+    } catch {
+      setEmails([]);
+    } finally {
+      setEmailsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void fetchConfig();
+  }, [fetchConfig]);
+
+  React.useEffect(() => {
+    if (showJournal) void fetchEmails(templateFilter);
+  }, [showJournal, templateFilter, fetchEmails]);
+
+  const handleToggle = async (key: keyof Omit<NotificationConfig, "alertRecipient">, value: boolean) => {
+    setPendingSwitch(key);
+    try {
+      const res = await fetch("/api/admin/settings/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ [key]: value }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { notifications?: NotificationConfig; error?: string };
+      if (!res.ok || !data.notifications) throw new Error(data.error || "Échec de la mise à jour.");
+      setConfig(data.notifications);
+      toast({ title: "Paramètre mis à jour" });
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setPendingSwitch(null);
+    }
+  };
+
+  const handleRecipientSave = async () => {
+    if (!config) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ alertRecipient: config.alertRecipient }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { notifications?: NotificationConfig; error?: string };
+      if (!res.ok || !data.notifications) throw new Error(data.error || "Échec de la mise à jour.");
+      setConfig(data.notifications);
+      toast({ title: "Destinataire enregistré" });
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-navy">
+          <MessageCircle className="h-5 w-5 text-brand" />
+          Emails &amp; notifications
+        </CardTitle>
+        <CardDescription>
+          Activez ou désactivez les notifications email et les alertes visuelles de la plateforme.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading || !config ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <ul className="space-y-2">
+              <NotificationSwitch
+                label="Notifications email"
+                description="Interrupteur général de tous les emails de notification."
+                checked={config.emailEnabled}
+                disabled={pendingSwitch === "emailEnabled"}
+                onCheckedChange={(v) => void handleToggle("emailEnabled", v)}
+              />
+              <NotificationSwitch
+                label="Emails d'inscription"
+                description="Bienvenue aux nouveaux candidats et entreprises + alerte à l'administration."
+                checked={config.emailRegistration}
+                disabled={!config.emailEnabled || pendingSwitch === "emailRegistration"}
+                onCheckedChange={(v) => void handleToggle("emailRegistration", v)}
+              />
+              <NotificationSwitch
+                label="Emails de paiement"
+                description="Demande de forfait, validation et activation du forfait formation."
+                checked={config.emailPayment}
+                disabled={!config.emailEnabled || pendingSwitch === "emailPayment"}
+                onCheckedChange={(v) => void handleToggle("emailPayment", v)}
+              />
+              <NotificationSwitch
+                label="Emails de messagerie"
+                description="Prévenir le destinataire par email d'un nouveau message interne."
+                checked={config.emailMessages}
+                disabled={!config.emailEnabled || pendingSwitch === "emailMessages"}
+                onCheckedChange={(v) => void handleToggle("emailMessages", v)}
+              />
+              <NotificationSwitch
+                label="Alertes visuelles administration"
+                description="Badges et notifications dans le back-office à chaque inscription ou paiement."
+                checked={config.adminAlerts}
+                disabled={pendingSwitch === "adminAlerts"}
+                onCheckedChange={(v) => void handleToggle("adminAlerts", v)}
+              />
+            </ul>
+
+            <Separator />
+
+            {/* Alert recipient */}
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="space-y-1.5">
+                <Label htmlFor="alert-recipient" className="text-xs">
+                  Destinataire supplémentaire des alertes administration (optionnel)
+                </Label>
+                <Input
+                  id="alert-recipient"
+                  type="email"
+                  placeholder="contact@coorizon.com"
+                  value={config.alertRecipient}
+                  onChange={(e) => setConfig({ ...config, alertRecipient: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <Button size="sm" variant="outline" onClick={() => void handleRecipientSave()} disabled={saving}>
+                {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
+                Enregistrer
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Email journal */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between text-sm font-semibold text-navy"
+                onClick={() => setShowJournal((v) => !v)}
+                aria-expanded={showJournal}
+              >
+                Journal des emails
+                <Badge variant="secondary" className="ml-2 text-[10px] font-normal">
+                  {showJournal ? "Masquer" : "Afficher"}
+                </Badge>
+              </button>
+              {showJournal && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(["all", ...EMAIL_TEMPLATES] as string[]).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTemplateFilter(t)}
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                          templateFilter === t
+                            ? "border-brand bg-brand/10 text-brand"
+                            : "border-border text-muted-foreground hover:bg-accent"
+                        )}
+                      >
+                        {t === "all" ? "Tous" : TEMPLATE_LABELS[t] ?? t}
+                      </button>
+                    ))}
+                  </div>
+                  {emailsLoading ? (
+                    <div className="space-y-2">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-10 w-full" />
+                      ))}
+                    </div>
+                  ) : emails.length === 0 ? (
+                    <p className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
+                      Aucun email enregistré pour le moment.
+                    </p>
+                  ) : (
+                    <ul className="max-h-72 space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
+                      {emails.map((e) => (
+                        <li key={e.id} className="rounded-md border p-2.5 text-xs">
+                          <div className="flex flex-wrap items-center justify-between gap-1.5">
+                            <span className="font-medium text-navy">{e.subject}</span>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] font-normal",
+                                e.status === "Sent" && "border-brand-green/40 text-brand-green",
+                                e.status === "Skipped" && "border-amber-400 text-amber-700",
+                                e.status === "Failed" && "border-italian-red/40 text-italian-red"
+                              )}
+                            >
+                              {e.status === "Sent" ? "Envoyé" : e.status === "Skipped" ? "Désactivé" : "Échec"}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground">
+                            <span>{e.toEmail}</span>
+                            <span aria-hidden>•</span>
+                            <span>{TEMPLATE_LABELS[e.template] ?? e.template}</span>
+                            <span aria-hidden>•</span>
+                            <span>
+                              {new Date(e.createdAt).toLocaleString("fr-FR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span aria-hidden>•</span>
+                            <span className="uppercase">{e.provider === "smtp" ? "SMTP" : "Journal"}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    Les emails sont envoyés via SMTP si les variables SMTP_HOST/SMTP_PORT sont configurées, sinon ils sont enregistrés dans ce journal (envoi simulé).
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function NotificationSwitch({
+  label,
+  description,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onCheckedChange: (v: boolean) => void;
+}) {
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-md border bg-card p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={label} />
+    </li>
+  );
+}
+
 // ─── Role access card (connection profiles) ────────────────────────────────
 
 function RoleAccessCard() {
@@ -506,6 +843,7 @@ function RoleAccessCard() {
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [pendingRole, setPendingRole] = React.useState<string | null>(null);
+  const [usersByRole, setUsersByRole] = React.useState<Record<string, number>>({});
 
   const fetchRoles = React.useCallback(async () => {
     setLoading(true);
@@ -532,6 +870,25 @@ function RoleAccessCard() {
   React.useEffect(() => {
     void fetchRoles();
   }, [fetchRoles]);
+
+  // Affected account counts per profile (so the admin sees the impact of
+  // enabling/disabling a connection profile).
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/stats", { credentials: "include" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { usersByRole?: Record<string, number> };
+        if (!cancelled && data.usersByRole) setUsersByRole(data.usersByRole);
+      } catch {
+        // Counts are best-effort.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleToggle = async (row: RoleAccessRow, nextValue: boolean) => {
     if (row.locked) return;
@@ -633,6 +990,9 @@ function RoleAccessCard() {
                     >
                       {row.label}
                     </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {usersByRole[row.role] ?? 0} compte{(usersByRole[row.role] ?? 0) > 1 ? "s" : ""}
+                    </span>
                     {row.locked && (
                       <span className="text-xs text-muted-foreground">
                         Toujours actif
@@ -655,6 +1015,11 @@ function RoleAccessCard() {
               );
             })}
           </ul>
+        )}
+        {!loading && !loadError && roles.some((r) => !r.enabled && !r.locked) && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+            Les profils désactivés apparaissent avec le badge « Connexions désactivées » dans l'onglet Utilisateurs et ne peuvent plus se connecter depuis les pages de connexion.
+          </p>
         )}
       </CardContent>
     </Card>

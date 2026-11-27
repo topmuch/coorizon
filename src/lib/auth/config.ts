@@ -64,6 +64,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Votre compte est désactivé. Contactez l'administration.");
         }
 
+        if (user.status === "Deactivated") {
+          throw new Error("Votre compte a été désactivé. Contactez l'administration.");
+        }
+
         if (user.status === "Pending") {
           throw new Error(
             "Votre compte est en attente de validation par l'administration. Vous recevrez un email dès activation."

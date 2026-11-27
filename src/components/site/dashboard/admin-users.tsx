@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { AdminSectionAlerts } from "../dashboard/admin-section-alerts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -391,6 +392,11 @@ export function AdminUsers() {
   const [total, setTotal] = React.useState(0);
   const [page, setPage] = React.useState(1);
 
+  // Roles whose platform-wide login is disabled (Paramètres). Users of these
+  // roles display a "Connexions désactivées" badge so deactivated profiles
+  // are clearly visible in this list.
+  const [disabledRoles, setDisabledRoles] = React.useState<string[]>([]);
+
   // Filters
   const [roleFilter, setRoleFilter] = React.useState<string>("all");
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
@@ -461,6 +467,27 @@ export function AdminUsers() {
   React.useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Fetch the platform-wide disabled profiles (Paramètres) to badge the
+  // affected accounts.
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/settings/roles", { credentials: "include" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { roles?: { role: string; enabled: boolean }[] };
+        if (!cancelled) {
+          setDisabledRoles((data.roles ?? []).filter((r) => !r.enabled).map((r) => r.role));
+        }
+      } catch {
+        // Badge is best-effort.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Reset to page 1 when filters change.
   React.useEffect(() => {
@@ -758,6 +785,9 @@ export function AdminUsers() {
         </p>
       </header>
 
+      {/* Visual notifications: new registrations targeting this tab. */}
+      <AdminSectionAlerts section="users" />
+
       {/* Filter bar */}
       <Card>
         <CardContent className="pt-0">
@@ -933,7 +963,14 @@ export function AdminUsers() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{u.email}</TableCell>
                       <TableCell>
-                        <RoleBadge role={u.role} />
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <RoleBadge role={u.role} />
+                          {disabledRoles.includes(u.role) && (
+                            <Badge variant="outline" className="border-amber-400 bg-amber-50 font-medium text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+                              Connexions désactivées
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={u.status} />
@@ -1006,6 +1043,11 @@ export function AdminUsers() {
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <RoleBadge role={u.role} />
                         <StatusBadge status={u.status} />
+                        {disabledRoles.includes(u.role) && (
+                          <Badge variant="outline" className="border-amber-400 bg-amber-50 font-medium text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+                            Connexions désactivées
+                          </Badge>
+                        )}
                       </div>
 
                       <Separator className="my-3" />

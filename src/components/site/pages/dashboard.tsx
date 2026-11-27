@@ -57,6 +57,7 @@ import { AgentSettings } from "../dashboard/agent-settings";
 import { AdminImmigration } from "../dashboard/admin-immigration";
 import { AdminPayments } from "../dashboard/admin-payments";
 import { AdminForfait } from "../dashboard/admin-forfait";
+import { AdminMessaging } from "../dashboard/admin-messaging";
 import { AdminAutomation } from "../dashboard/admin-automation";
 import { AdminAi } from "../dashboard/admin-ai";
 import { AdminTraining } from "../dashboard/admin-training";
@@ -78,7 +79,7 @@ const RECRUITER_SECTIONS: RecruiterSection[] = [
 const ADMIN_SECTIONS: AdminSection[] = [
   "overview", "users", "companies", "offers", "applications",
   "training", "immigration", "payments", "forfait", "videos", "cms", "audit",
-  "automation", "ai", "settings",
+  "automation", "ai", "messages", "settings",
 ];
 
 const ADMIN_LOT_MAP: Record<string, string> = {
@@ -312,6 +313,8 @@ export function DashboardPage() {
           return <AdminForfait />;
         case "videos":
           return <AdminVideos />;
+        case "messages":
+          return <AdminMessaging />;
         case "settings":
           return <AdminSettings />;
         default:

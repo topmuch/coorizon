@@ -5,6 +5,8 @@ import { isAdmin } from "@/lib/permissions";
 import { findForfaitService, generateInvoiceNumber } from "@/lib/forfait";
 import { notify } from "@/lib/notifications";
 import { audit } from "@/lib/auth/audit";
+import { sendEmail, emailWrap } from "@/lib/email";
+import { formatAmount } from "@/lib/format-currency";
 
 /**
  * POST /api/admin/forfait/validate
@@ -83,6 +85,21 @@ export async function POST(req: NextRequest) {
         link: "/dashboard",
       });
 
+      // Email to the candidate: forfait activated (payment validated).
+      await sendEmail({
+        to: payment.user.email,
+        subject: "COORIZON — Votre forfait formation est activé",
+        body: emailWrap("Forfait formation activé", [
+          `Bonjour ${payment.user.firstName ?? ""},`.trim(),
+          "",
+          `Votre paiement de ${formatAmount(updated.amount, updated.currency)} a été validé par l'administration.`,
+          `Numéro de facture : ${updated.invoiceNumber ?? "—"}`,
+          "Votre accès complet à la plateforme est maintenant actif : formations, examens, offres d'emploi et candidatures.",
+        ]),
+        template: "payment",
+        userId: payment.userId,
+      });
+
       await audit({
         actorId: session.user.id,
         action: "admin.forfait.validate",
@@ -109,6 +126,21 @@ export async function POST(req: NextRequest) {
         "Votre demande d'acquisition du forfait formation a été rejetée par l'administration." +
         (reason ? ` Motif : ${reason}` : ""),
       link: "/dashboard?section=payments",
+    });
+
+    // Email to the candidate: request rejected.
+    await sendEmail({
+      to: payment.user.email,
+      subject: "COORIZON — Votre demande de forfait a été rejetée",
+      body: emailWrap("Demande de forfait rejetée", [
+        `Bonjour ${payment.user.firstName ?? ""},`.trim(),
+        "",
+        "Votre demande d'acquisition du forfait formation a été rejetée par l'administration.",
+        reason ? `Motif : ${reason}` : "",
+        "Contactez l'administration COORIZON pour plus d'informations.",
+      ].filter(Boolean)),
+      template: "payment",
+      userId: payment.userId,
     });
 
     await audit({

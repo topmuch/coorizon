@@ -4,6 +4,9 @@ import { requireSession, authErrorResponse } from "@/lib/auth/session";
 import { ROLES } from "@/lib/permissions";
 import { getOrCreateForfaitService } from "@/lib/forfait";
 import { audit } from "@/lib/auth/audit";
+import { notifyAdmins } from "@/lib/notifications";
+import { sendEmail, sendAdminAlert, emailWrap } from "@/lib/email";
+import { formatAmount } from "@/lib/format-currency";
 
 /**
  * POST /api/candidate/forfait
@@ -66,6 +69,45 @@ export async function POST(req: NextRequest) {
       metadata: { amount: payment.amount, currency: payment.currency },
       req,
     });
+
+    const amountLabel = formatAmount(payment.amount, payment.currency);
+    const clientName = `${session.user.firstName ?? ""} ${session.user.lastName ?? ""}`.trim() || session.user.email;
+
+    // Visual notification for the administration: the Forfait tab will
+    // display a badge until the admin opens it.
+    await notifyAdmins({
+      type: "Info",
+      title: "Nouvelle demande de forfait",
+      message: `${clientName} a demandé l'acquisition du forfait (${amountLabel}). Validation requise dans l'onglet Forfait Formation.`,
+      link: "dashboard?section=forfait",
+    });
+
+    // Confirmation email to the candidate.
+    await sendEmail({
+      to: session.user.email,
+      subject: "COORIZON — Votre demande de forfait est en attente de validation",
+      body: emailWrap("Demande de forfait enregistrée", [
+        `Bonjour ${clientName},`,
+        "",
+        `Votre demande d'acquisition du Forfait Formation (${amountLabel}) a été enregistrée.`,
+        "Elle est en attente de validation par l'administration COORIZON.",
+        "Votre accès complet sera activé dès la validation de votre paiement.",
+      ]),
+      template: "payment",
+      userId: session.user.id,
+    });
+
+    // Alert email to the administration.
+    await sendAdminAlert(
+      "COORIZON — Nouvelle demande de forfait",
+      emailWrap("Nouvelle demande de forfait", [
+        `Client : ${clientName} (${session.user.email})`,
+        `Montant : ${amountLabel}`,
+        "",
+        "Un badge « Nouveautés » est visible dans l'onglet Forfait Formation du back-office.",
+      ]),
+      "payment"
+    );
 
     return Response.json({ payment }, { status: 201 });
   } catch (error) {

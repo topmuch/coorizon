@@ -4,6 +4,8 @@ import { hashPassword, validatePasswordPolicy, validateEmail } from "@/lib/auth/
 import { ROLES } from "@/lib/permissions";
 import { audit } from "@/lib/auth/audit";
 import { fireEvent, EVENTS } from "@/lib/automation";
+import { notifyAdmins } from "@/lib/notifications";
+import { sendEmail, sendAdminAlert, emailWrap } from "@/lib/email";
 
 /**
  * POST /api/auth/register-candidate
@@ -99,6 +101,40 @@ export async function POST(req: NextRequest) {
       notifyMessage: "Votre compte candidat a été créé.",
       notifyLink: "/candidate",
     });
+
+    // Welcome email to the new candidate.
+    await sendEmail({
+      to: user.email,
+      subject: "Bienvenue sur COORIZON — votre compte candidat est actif",
+      body: emailWrap("Bienvenue sur COORIZON !", [
+        `Bonjour ${user.firstName ?? ""} ${user.lastName ?? ""},`.trim(),
+        "",
+        "Votre compte candidat a été créé avec succès.",
+        "Connectez-vous pour compléter votre profil et découvrir les offres d'emploi en Italie.",
+        "Pour accéder aux formations et aux offres, acquérez le Forfait Formation depuis votre espace.",
+      ]),
+      template: "registration",
+      userId: user.id,
+    });
+
+    // Visual notification + alert email for the administration: the
+    // Utilisateurs tab will display a badge until the admin opens it.
+    await notifyAdmins({
+      type: "Success",
+      title: "Nouveau candidat inscrit",
+      message: `${user.firstName ?? ""} ${user.lastName ?? ""} (${user.email}) vient de créer un compte candidat.`,
+      link: "dashboard?section=users",
+    });
+    await sendAdminAlert(
+      "COORIZON — Nouveau candidat inscrit",
+      emailWrap("Nouveau candidat inscrit", [
+        `Nom : ${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
+        `Email : ${user.email}`,
+        "",
+        "Un badge « Nouveautés » est visible dans l'onglet Utilisateurs du back-office.",
+      ]),
+      "registration"
+    );
 
     return Response.json(
       {

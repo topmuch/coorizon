@@ -5,6 +5,7 @@ import { ROLES, ADMIN_ROLES } from "@/lib/permissions";
 import { audit } from "@/lib/auth/audit";
 import { fireEvent, EVENTS } from "@/lib/automation";
 import { notifyMany } from "@/lib/notifications";
+import { sendEmail, sendAdminAlert, emailWrap } from "@/lib/email";
 
 /**
  * POST /api/auth/register-recruiter
@@ -137,7 +138,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Notify all admins that a new company awaits validation.
+    // Notify all admins that a new company awaits validation (visual badge on
+    // the Entreprises tab of the back-office).
     const adminUsers = await db.user.findMany({
       where: { role: { in: ADMIN_ROLES as string[] } },
       select: { id: true },
@@ -148,9 +150,36 @@ export async function POST(req: NextRequest) {
         type: "Warning",
         title: "Nouvelle entreprise à valider",
         message: `Nouvelle entreprise en attente de validation: ${result.company.legalName}`,
-        link: "/admin/companies",
+        link: "dashboard?section=companies",
       });
     }
+
+    // Confirmation email to the recruiter (account pending validation).
+    await sendEmail({
+      to: result.user.email,
+      subject: "COORIZON — Votre demande d'inscription entreprise est enregistrée",
+      body: emailWrap("Demande d'inscription enregistrée", [
+        `Entreprise : ${result.company.legalName}`,
+        `Contact : ${result.user.email}`,
+        "",
+        "Votre compte est en attente de validation par l'administration COORIZON.",
+        "Vous recevrez un email dès l'activation de votre compte.",
+      ]),
+      template: "registration",
+      userId: result.user.id,
+    });
+
+    // Alert email to the administration.
+    await sendAdminAlert(
+      "COORIZON — Nouvelle entreprise à valider",
+      emailWrap("Nouvelle entreprise à valider", [
+        `Entreprise : ${result.company.legalName}`,
+        `Email : ${result.user.email}`,
+        "",
+        "Un badge « Nouveautés » est visible dans l'onglet Entreprises du back-office.",
+      ]),
+      "registration"
+    );
 
     return Response.json(
       {

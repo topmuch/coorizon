@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
+import { notify } from "@/lib/notifications";
+import { sendEmail, emailWrap } from "@/lib/email";
 
 /**
  * GET /api/messages — list the user's conversations (thread view).
@@ -110,6 +112,44 @@ export async function POST(req: NextRequest) {
         readStatus: "Unread",
       },
     });
+
+    // Recipient context for the visual notification + email.
+    const recipient = await db.user.findUnique({
+      where: { id: recipientId },
+      select: { email: true, firstName: true, isActive: true },
+    });
+    const senderName =
+      `${session.user.firstName ?? ""} ${session.user.lastName ?? ""}`.trim() ||
+      session.user.email;
+
+    if (recipient?.isActive) {
+      // Visual in-app notification for the recipient.
+      await notify({
+        userId: recipientId,
+        type: "Info",
+        title: "Nouveau message",
+        message: `${senderName} vous a envoyé un message : ${message.trim().slice(0, 80)}${message.trim().length > 80 ? "…" : ""}`,
+        link: "dashboard?section=messages",
+      });
+
+      // Email notification (respects the emailMessages switch).
+      await sendEmail({
+        to: recipient.email,
+        subject: `COORIZON — Nouveau message de ${senderName}`,
+        body: emailWrap("Nouveau message", [
+          `Bonjour ${recipient.firstName ?? ""},`.trim(),
+          "",
+          `${senderName} vous a envoyé un message sur COORIZON :`,
+          "",
+          message.trim(),
+          "",
+          "Connectez-vous à votre espace pour répondre.",
+        ]),
+        template: "message",
+        userId: recipientId,
+      });
+    }
+
     return Response.json({ message: msg }, { status: 201 });
   } catch (e) { return authErrorResponse(e); }
 }

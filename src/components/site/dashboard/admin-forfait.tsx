@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminSectionAlerts } from "../dashboard/admin-section-alerts";
 import {
   Table,
   TableBody,
@@ -594,6 +595,9 @@ export function AdminForfait() {
           </Button>
         </div>
       </header>
+
+      {/* Visual notifications: new forfait requests targeting this tab. */}
+      <AdminSectionAlerts section="forfait" />
 
       {/* Config card */}
       {forfait && (

@@ -1000,3 +1000,23 @@ model VideoView {
   @@index([candidateId])
   @@index([completed])
 }
+
+// =====================================================================
+// 35. EMAIL LOGS (journal des emails de notification)
+// =====================================================================
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  toEmail   String
+  subject   String
+  body      String
+  template  String   // registration | payment | message | account | forfait
+  status    String   @default("Sent") // Sent | Failed | Skipped
+  provider  String   @default("log") // log (simulated) | smtp
+  error     String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([template])
+}

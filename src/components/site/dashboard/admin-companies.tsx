@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { AdminSectionAlerts } from "../dashboard/admin-section-alerts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -563,6 +564,9 @@ export function AdminCompanies() {
           et consultez leurs documents justificatifs.
         </p>
       </header>
+
+      {/* Visual notifications: new company registrations targeting this tab. */}
+      <AdminSectionAlerts section="companies" />
 
       {/* Error */}
       {error && (

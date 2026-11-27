@@ -18,6 +18,7 @@ import {
   Zap,
   Bot,
   Video,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ export type AdminSection =
   | "automation"
   | "ai"
   | "videos"
+  | "messages"
   | "settings";
 
 export interface AdminNavSection {
@@ -71,6 +73,7 @@ export const adminNav: AdminNavSection[] = [
   { id: "automation", label: "Automatisations", icon: Zap },
   { id: "ai", label: "Assistant IA", icon: Bot },
   { id: "videos", label: "Médiathèque", icon: Video },
+  { id: "messages", label: "Messagerie", icon: MessageSquare },
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
 
@@ -79,11 +82,71 @@ interface AdminShellProps {
   children: React.ReactNode;
 }
 
+// ─── Admin visual notifications (sidebar badges) ─────────────────────────────
+
+interface AdminNotification {
+  id: string;
+  title: string;
+  message: string;
+  link: string | null;
+  createdAt: string;
+}
+
+/**
+ * Extract the back-office section targeted by a notification link.
+ * Supports "dashboard?section=users", "/admin/companies" and legacy links.
+ */
+function sectionFromLink(link: string | null): string | null {
+  if (!link) return null;
+  const m = link.match(/section=([\w]+)/);
+  if (m) return m[1];
+  const legacy = link.match(/\/admin\/(\w+)/);
+  if (legacy) return legacy[1] === "payments" ? "payments" : legacy[1];
+  return null;
+}
+
+/**
+ * Poll the admin's unread in-app notifications and expose one badge count per
+ * back-office section (Utilisateurs, Entreprises, Forfait, Messagerie…).
+ * The badge disappears once the corresponding notifications are marked read
+ * by the section component (AdminSectionAlerts).
+ */
+function useAdminNotificationCounts() {
+  const [counts, setCounts] = React.useState<Record<string, number>>({});
+
+  const load = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications?unread=true&pageSize=200", {
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { notifications?: AdminNotification[] };
+      const next: Record<string, number> = {};
+      for (const n of data.notifications ?? []) {
+        const s = sectionFromLink(n.link);
+        if (s) next[s] = (next[s] ?? 0) + 1;
+      }
+      setCounts(next);
+    } catch {
+      // Badge refresh is best-effort.
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void load();
+    const timer = setInterval(() => void load(), 30000);
+    return () => clearInterval(timer);
+  }, [load]);
+
+  return { counts, refresh: load };
+}
+
 export function AdminShell({ section, children }: AdminShellProps) {
   const { navigate } = useSiteRouter();
   const { user, signOut } = useSession();
   const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const { counts } = useAdminNotificationCounts();
 
   const initials = user
     ? ((user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")).toUpperCase() || user.email[0].toUpperCase()
@@ -121,6 +184,7 @@ export function AdminShell({ section, children }: AdminShellProps) {
         <ul className="space-y-0.5">
           {adminNav.map((item) => {
             const active = section === item.id;
+            const badgeCount = counts[item.id] ?? 0;
             return (
               <li key={item.id}>
                 <button
@@ -137,6 +201,14 @@ export function AdminShell({ section, children }: AdminShellProps) {
                   {item.lot && !active && (
                     <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
                       {item.lot}
+                    </span>
+                  )}
+                  {badgeCount > 0 && !active && (
+                    <span
+                      aria-label={`${badgeCount} notification${badgeCount > 1 ? "s" : ""}`}
+                      className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-italian-red px-1.5 text-[10px] font-bold text-white"
+                    >
+                      {badgeCount > 9 ? "9+" : badgeCount}
                     </span>
                   )}
                 </button>

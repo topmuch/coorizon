@@ -58,3 +58,35 @@ export async function notifyMany({
     userIds.map((userId) => notify({ userId, type, title, message, link }))
   );
 }
+
+/**
+ * Create an in-app visual notification for every active Admin / SuperAdmin.
+ * Respects the platform "adminAlerts" switch. Used for registration and
+ * payment events so the back-office tabs (Utilisateurs, Entreprises,
+ * Forfait…) display a badge until the admin opens the section.
+ */
+export async function notifyAdmins({
+  type = "Info",
+  title,
+  message,
+  link,
+}: {
+  type?: NotificationType;
+  title: string;
+  message: string;
+  link?: string;
+}) {
+  try {
+    const { getPlatformSettings } = await import("@/lib/platform-settings");
+    const settings = await getPlatformSettings();
+    if (!settings.notifications.adminAlerts) return;
+
+    const admins = await db.user.findMany({
+      where: { role: { in: ["Admin", "SuperAdmin"] }, isActive: true },
+      select: { id: true },
+    });
+    await notifyMany({ userIds: admins.map((a) => a.id), type, title, message, link });
+  } catch {
+    // Notification creation must never break the main flow.
+  }
+}

@@ -49,13 +49,16 @@ const IMMIGRATION_LABELS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Stat card
+// Stat card — multicolor KPI palette (one vivid color per indicator)
 // ---------------------------------------------------------------------------
 
 interface StatCardProps {
   label: string;
   value: string;
   icon: LucideIcon;
+  /** Tailwind classes for the card container (multicolor accent). */
+  cardClass: string;
+  /** Tailwind classes for the icon box (vivid background). */
   iconBoxClass: string;
   onClick?: () => void;
 }
@@ -64,6 +67,7 @@ function StatCard({
   label,
   value,
   icon: Icon,
+  cardClass,
   iconBoxClass,
   onClick,
 }: StatCardProps) {
@@ -86,6 +90,7 @@ function StatCard({
       }
       className={cn(
         "py-5",
+        cardClass,
         clickable &&
           "cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       )}
@@ -94,14 +99,14 @@ function StatCard({
         <div
           aria-hidden
           className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg",
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white shadow-sm",
             iconBoxClass
           )}
         >
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <div className="text-2xl font-bold leading-tight text-navy">
+          <div className="text-2xl font-bold leading-tight text-navy dark:text-foreground">
             {value}
           </div>
           <div className="truncate text-sm text-muted-foreground">{label}</div>
@@ -262,59 +267,69 @@ export function CandidateOverview() {
     return null;
   }
 
-  // ---- Stat cards config ------------------------------------------------
+  // ---- Stat cards config (multicolor KPI palette) ------------------------
   const cards: StatCardProps[] = [
     {
       label: "Profil complété",
       value: `${stats.profileCompletion}%`,
       icon: User,
-      iconBoxClass: "bg-brand/10 text-brand",
+      cardClass:
+        "border-l-4 border-emerald-500 bg-gradient-to-br from-emerald-50 to-card dark:from-emerald-500/10 dark:to-card",
+      iconBoxClass: "bg-emerald-500",
       onClick: () => navigate("dashboard", { section: "profile" }),
     },
     {
       label: "Niveau d'italien",
       value: stats.italianLevel ?? "—",
       icon: GraduationCap,
-      iconBoxClass: "bg-brand-green/10 text-brand-green",
+      cardClass:
+        "border-l-4 border-teal-500 bg-gradient-to-br from-teal-50 to-card dark:from-teal-500/10 dark:to-card",
+      iconBoxClass: "bg-teal-500",
     },
     {
       label: "Formations en cours",
       value: String(stats.activeEnrollments),
       icon: BookOpen,
-      iconBoxClass: "bg-brand/10 text-brand",
+      cardClass:
+        "border-l-4 border-amber-500 bg-gradient-to-br from-amber-50 to-card dark:from-amber-500/10 dark:to-card",
+      iconBoxClass: "bg-amber-500",
       onClick: () => navigate("dashboard", { section: "training" }),
     },
     {
       label: "Candidatures envoyées",
       value: String(stats.applicationsSent),
       icon: Send,
-      iconBoxClass: "bg-navy/10 text-navy",
+      cardClass:
+        "border-l-4 border-violet-500 bg-gradient-to-br from-violet-50 to-card dark:from-violet-500/10 dark:to-card",
+      iconBoxClass: "bg-violet-500",
     },
     {
       label: "Candidatures en cours",
       value: String(stats.applicationsInProgress),
       icon: Clock,
-      iconBoxClass: "bg-brand/10 text-brand",
+      cardClass:
+        "border-l-4 border-lime-600 bg-gradient-to-br from-lime-50 to-card dark:from-lime-500/10 dark:to-card",
+      iconBoxClass: "bg-lime-600",
       onClick: () => navigate("dashboard", { section: "applications" }),
     },
     {
       label: "Entretiens programmés",
       value: String(stats.interviewsScheduled),
       icon: CalendarClock,
-      iconBoxClass:
-        stats.interviewsScheduled > 0
-          ? "bg-italian-red/10 text-italian-red"
-          : "bg-muted text-muted-foreground",
+      cardClass:
+        "border-l-4 border-orange-500 bg-gradient-to-br from-orange-50 to-card dark:from-orange-500/10 dark:to-card",
+      iconBoxClass: "bg-orange-500",
       onClick: () => navigate("dashboard", { section: "applications" }),
     },
     {
       label: "Documents manquants",
       value: String(stats.missingDocs),
       icon: AlertTriangle,
-      iconBoxClass:
+      cardClass:
         stats.missingDocs > 0
-          ? "bg-italian-red/10 text-italian-red"
-          : "bg-brand-green/10 text-brand-green",
+          ? "border-l-4 border-rose-500 bg-gradient-to-br from-rose-50 to-card dark:from-rose-500/10 dark:to-card"
+          : "border-l-4 border-emerald-500 bg-gradient-to-br from-emerald-50 to-card dark:from-emerald-500/10 dark:to-card",
+      iconBoxClass: stats.missingDocs > 0 ? "bg-rose-500" : "bg-emerald-500",
       onClick: () => navigate("dashboard", { section: "documents" }),
     },
     {
@@ -324,7 +339,9 @@ export function CandidateOverview() {
           stats.immigrationStatus
         : "Aucun dossier",
       icon: Plane,
-      iconBoxClass: "bg-navy/10 text-navy",
+      cardClass:
+        "border-l-4 border-brand bg-gradient-to-br from-green-50 to-card dark:from-brand/10 dark:to-card",
+      iconBoxClass: "bg-brand",
       onClick: () => navigate("dashboard", { section: "immigration" }),
     },
   ];
