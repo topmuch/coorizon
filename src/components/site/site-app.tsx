@@ -17,6 +17,7 @@ import { AboutPage } from "./pages/about";
 import { FaqPage } from "./pages/faq";
 import { ContactPage } from "./pages/contact";
 import { DashboardPage } from "./pages/dashboard";
+import { PlusCoorizonPage } from "./pages/plus-coorizon";
 import { AiAssistantWidget } from "./ai-assistant-widget";
 import { WhatsAppWidget } from "./whatsapp-widget";
 
@@ -53,6 +54,8 @@ function PageRenderer() {
         return <RegisterCandidatePage />;
       case "register-recruiter":
         return <RegisterRecruiterPage />;
+      case "plus-coorizon":
+        return <PlusCoorizonPage />;
       case "dashboard":
         return <DashboardPage />;
       default:

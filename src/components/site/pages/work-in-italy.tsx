@@ -290,20 +290,17 @@ export function WorkInItalyPage() {
         />
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {sectors.map((sector) => (
-            <button
+            <div
               key={sector.slug}
-              onClick={() => navigate("jobs", { sector: sector.slug })}
-              className="group flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+              className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-white">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
                 <sector.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-navy">{sector.name}</div>
-                <div className="text-xs text-muted-foreground">{sector.count} offres</div>
               </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-brand opacity-0 transition-opacity group-hover:opacity-100" />
-            </button>
+            </div>
           ))}
         </div>
       </SectionShell>

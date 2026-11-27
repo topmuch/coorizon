@@ -2,17 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Menu, ChevronDown, Briefcase, GraduationCap, Plane, Building2, CircleHelp, Info, Mail, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, ChevronDown, Briefcase, Plane, Building2, CircleHelp, Info, Mail, LogOut, LayoutDashboard, Sparkles } from "lucide-react";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import {
@@ -37,10 +35,8 @@ interface NavItem {
 }
 
 const mainNav: NavItem[] = [
-  { label: "Nos offres d'emploi", route: "jobs", icon: Briefcase, description: "Postes disponibles auprès d'entreprises italiennes partenaires." },
-  { label: "Formation en italien", route: "training", icon: GraduationCap, description: "Parcours A1 à C2 avec examens et attestations." },
   { label: "Travailler en Italie", route: "work-in-italy", icon: Plane, description: "Tout savoir sur l'emploi et la mobilité en Italie." },
-  { label: "Nos entreprises", route: "partners", icon: Building2, description: "Découvrez les entreprises qui recrutent." },
+  { label: "Plus COORIZON", route: "plus-coorizon", icon: Sparkles, description: "Ressources, apprentissage, Soft Skills, conseil et démarches." },
   { label: "Comment ça marche", route: "how-it-works", icon: CircleHelp, description: "Le parcours candidat étape par étape." },
   { label: "À propos", route: "about", icon: Info, description: "La mission et l'équipe COORIZON." },
   { label: "FAQ", route: "faq", icon: CircleHelp, description: "Questions fréquentes." },
@@ -81,28 +77,6 @@ export function SiteHeader() {
         <NavigationMenu className="hidden xl:flex max-w-none">
           <NavigationMenuList>
             <NavigationMenuItem>
-              <NavigationMenuTrigger
-                className={cn(route === "jobs" && "text-brand")}
-                onClick={() => handleNav("jobs")}
-              >
-                Emplois
-              </NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <NavCard item={mainNav[0]} onNavigate={handleNav} />
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <NavigationMenuTrigger
-                className={cn(route === "training" && "text-brand")}
-                onClick={() => handleNav("training")}
-              >
-                Formation
-              </NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <NavCard item={mainNav[1]} onNavigate={handleNav} />
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
               <NavigationMenuLink
                 className={cn(navigationMenuTriggerStyle(), route === "work-in-italy" && "text-brand")}
                 onClick={() => handleNav("work-in-italy")}
@@ -112,10 +86,13 @@ export function SiteHeader() {
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink
-                className={cn(navigationMenuTriggerStyle(), route === "partners" && "text-brand")}
-                onClick={() => handleNav("partners")}
+                className={cn(navigationMenuTriggerStyle(), route === "plus-coorizon" && "text-brand")}
+                onClick={() => handleNav("plus-coorizon")}
               >
-                Entreprises
+                <span className="inline-flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-brand" />
+                  Plus COORIZON
+                </span>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
@@ -269,7 +246,7 @@ export function SiteHeader() {
                         Je suis candidat
                       </Button>
                       <Button variant="secondary" className="w-full" onClick={() => handleNav("register-recruiter")}>
-                        Je suis recruteur
+                        Je suis entreprise
                       </Button>
                     </>
                   )}
@@ -280,24 +257,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  );
-}
-
-function NavCard({ item, onNavigate }: { item: NavItem; onNavigate: (r: SiteRoute) => void }) {
-  return (
-    <button
-      onClick={() => onNavigate(item.route)}
-      className="flex w-[260px] items-start gap-3 rounded-lg p-3 text-left transition-colors hover:bg-accent"
-    >
-      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
-        <item.icon className="h-4 w-4" />
-      </div>
-      <div className="space-y-0.5">
-        <div className="text-sm font-semibold text-foreground">{item.label}</div>
-        {item.description && (
-          <div className="text-xs leading-relaxed text-muted-foreground">{item.description}</div>
-        )}
-      </div>
-    </button>
   );
 }

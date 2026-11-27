@@ -145,7 +145,7 @@ export function RegisterRecruiterPage() {
 
   return (
     <AuthLayout
-      title="Inscription recruteur"
+      title="Inscription entreprise"
       subtitle="Publiez vos offres et recrutez des talents africains qualifiés."
     >
       <form onSubmit={onSubmit} className="space-y-5">

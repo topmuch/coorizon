@@ -16,6 +16,12 @@ import {
   HardHat,
   Award,
   Video,
+  BookOpen,
+  School,
+  Compass,
+  ClipboardList,
+  Brain,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +31,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SectionHeading, SectionShell } from "./section-heading";
 import { JobOfferCard } from "../job-offer-card";
 import { useSiteRouter } from "@/lib/site-router";
+import { cn } from "@/lib/utils";
 import {
   stats,
   sectors,
@@ -67,15 +74,17 @@ export function StatsBand() {
 }
 
 export function SectorsSection() {
-  const { navigate } = useSiteRouter();
-
-  // KPI stats with logo colors (green #1E8236, gold #D4A017, navy #0D3B1A)
-  const kpis = [
-    { value: "3 200+", label: "Candidats accompagnés", color: "bg-brand", textColor: "text-white" },
-    { value: "610+", label: "Offres d'emploi actives", color: "bg-brand-green", textColor: "text-white" },
-    { value: "180+", label: "Entreprises partenaires", color: "bg-navy", textColor: "text-white" },
-    { value: "94%", label: "Taux de réussite", color: "bg-gold", textColor: "text-navy" },
-  ];
+  // Fond coloré par secteur (cohérence visuelle avec la palette du logo)
+  const sectorStyles: Record<string, string> = {
+    "hotellerie-restauration": "from-brand to-emerald-600",
+    "agriculture": "from-lime-600 to-green-700",
+    "btp": "from-amber-500 to-orange-600",
+    "sante": "from-rose-500 to-red-600",
+    "industrie": "from-slate-600 to-slate-800",
+    "logistique": "from-teal-500 to-teal-700",
+    "tech": "from-violet-500 to-purple-700",
+    "commerce": "from-yellow-500 to-amber-600",
+  };
 
   return (
     <SectionShell>
@@ -85,40 +94,35 @@ export function SectorsSection() {
         description="COORIZON collabore avec des entreprises italiennes de toutes tailles, des exploitations agricoles aux groupes industriels, en passant par l'hôtellerie et la santé."
       />
 
-      {/* KPI cards with logo colors */}
-      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {kpis.map((kpi, i) => (
-          <div
-            key={i}
-            className={`${kpi.color} ${kpi.textColor} flex flex-col items-center justify-center rounded-2xl p-6 shadow-lg transition-transform hover:-translate-y-1`}
-          >
-            <div className="text-3xl font-extrabold tracking-tight sm:text-4xl">{kpi.value}</div>
-            <div className="mt-1.5 text-center text-xs font-medium opacity-90 sm:text-sm">{kpi.label}</div>
+      {/* KPI — Candidats accompagnés */}
+      <div className="mt-8">
+        <div className="flex items-center justify-center gap-5 rounded-2xl bg-brand px-6 py-6 text-white shadow-lg sm:gap-8 sm:px-10">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
+            <Users className="h-7 w-7" />
           </div>
-        ))}
+          <div className="text-center sm:text-left">
+            <div className="text-4xl font-extrabold tracking-tight sm:text-5xl">200</div>
+            <div className="mt-1 text-sm font-medium opacity-95 sm:text-base">Candidats accompagnés</div>
+          </div>
+        </div>
       </div>
 
-      {/* Sector cards */}
+      {/* Sector cards — fonds colorés, sans lien cliquable */}
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {sectors.map((sector) => (
-          <button
+          <div
             key={sector.slug}
-            onClick={() => navigate("jobs", { sector: sector.slug })}
-            className="group flex flex-col items-start rounded-xl border border-border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+            className={cn(
+              "bg-gradient-to-br p-5 text-white shadow-md transition-all hover:-translate-y-1 hover:shadow-xl",
+              sectorStyles[sector.slug] ?? "from-brand to-brand-green"
+            )}
           >
-            <div className="flex w-full items-center justify-between">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-white">
-                <sector.icon className="h-5 w-5" />
-              </div>
-              <Badge variant="secondary" className="font-semibold">{sector.count}</Badge>
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/20 backdrop-blur">
+              <sector.icon className="h-5 w-5" />
             </div>
-            <h3 className="mt-4 font-semibold text-navy">{sector.name}</h3>
-            <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{sector.description}</p>
-            <span className="mt-3 inline-flex items-center text-xs font-semibold text-brand">
-              Voir les offres
-              <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </button>
+            <h3 className="mt-4 font-semibold">{sector.name}</h3>
+            <p className="mt-1.5 line-clamp-2 text-sm text-white/85">{sector.description}</p>
+          </div>
         ))}
       </div>
     </SectionShell>
@@ -251,6 +255,58 @@ export function JourneySection() {
         ))}
       </div>
     </SectionShell>
+  );
+}
+
+export function PlusCoorizonSection() {
+  const { navigate } = useSiteRouter();
+
+  const pillars = [
+    { icon: BookOpen, label: "Ressources" },
+    { icon: School, label: "Espaces d'apprentissage" },
+    { icon: Brain, label: "Soft Skills Center" },
+    { icon: Compass, label: "Conseil et orientation" },
+    { icon: ClipboardList, label: "Démarches administratives" },
+  ];
+
+  return (
+    <section className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy to-emerald-900" aria-hidden="true" />
+      <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5 text-gold" />
+            Bien plus qu'un recrutement
+          </span>
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white text-balance sm:text-4xl">
+            Plus COORIZON : un accompagnement global
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-slate-200 text-balance sm:text-lg">
+            Ressources, espaces d'apprentissage, Soft Skills Center, conseil personnalisé et démarches
+            administratives : tout ce qu'il faut pour réussir votre mobilité professionnelle.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            {pillars.map((p) => (
+              <span
+                key={p.label}
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur sm:text-sm"
+              >
+                <p.icon className="h-4 w-4 text-brand-green" />
+                {p.label}
+              </span>
+            ))}
+          </div>
+          <Button
+            size="lg"
+            onClick={() => navigate("plus-coorizon")}
+            className="mt-8 bg-brand hover:bg-brand/90"
+          >
+            Découvrir Plus COORIZON
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }
 

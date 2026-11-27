@@ -9,6 +9,7 @@ import {
   TestimonialsSection,
   FaqPreviewSection,
   FinalCtaSection,
+  PlusCoorizonSection,
 } from "../sections/home-sections";
 import { PartenariatSection } from "../sections/partenariat";
 
@@ -17,11 +18,12 @@ export function HomePage() {
     <>
       <HeroSection />
       <StatsBand />
-      <SectorsSection />
-      <TrainingSection />
       <JourneySection />
+      <TrainingSection />
+      <SectorsSection />
       <TestimonialsSection />
       <FaqPreviewSection />
+      <PlusCoorizonSection />
       <PartenariatSection />
       <FinalCtaSection />
     </>

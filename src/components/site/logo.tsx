@@ -28,7 +28,7 @@ export function Logo({ className, variant = "default", showMark = true, size = "
           alt="COORIZON"
           height={s.height}
           width={s.height * 3}
-          className="h-auto w-auto"
+          className="h-auto w-auto shrink-0"
           style={{
             height: `${s.height}px`,
             width: "auto",

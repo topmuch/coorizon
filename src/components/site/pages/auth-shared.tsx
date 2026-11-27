@@ -16,7 +16,17 @@ import { Logo } from "../logo";
 
 // ─── Auth Layout (shared) ───────────────────────────────────────────────────
 
-export function AuthLayout({ children, accent = "green" }: { children: React.ReactNode; accent?: "green" | "gold" | "navy" }) {
+export function AuthLayout({
+  children,
+  accent = "green",
+  title,
+  subtitle,
+}: {
+  children: React.ReactNode;
+  accent?: "green" | "gold" | "navy";
+  title?: string;
+  subtitle?: string;
+}) {
   const accentColors = {
     green: "from-brand to-brand-green",
     gold: "from-brand-green to-gold",
@@ -33,7 +43,15 @@ export function AuthLayout({ children, accent = "green" }: { children: React.Rea
         </div>
         <Card className={`border-0 shadow-2xl`}>
           <div className={`h-1.5 rounded-t-xl bg-gradient-to-r ${accentColors[accent]}`} />
-          <CardContent className="p-6 sm:p-8">{children}</CardContent>
+          <CardContent className="p-6 sm:p-8">
+            {title && (
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-navy">{title}</h1>
+                {subtitle && <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>}
+              </div>
+            )}
+            {children}
+          </CardContent>
         </Card>
         <p className="mt-6 text-center text-xs text-muted-foreground">
           En continuant, vous acceptez les conditions d'utilisation et la politique de
@@ -60,7 +78,7 @@ export function LoginPage() {
     },
     {
       id: "recruiter",
-      title: "Recruteur",
+      title: "Entreprise",
       description: "Gérez vos offres d'emploi et candidatures reçues.",
       icon: Briefcase,
       accent: "navy",
@@ -128,7 +146,7 @@ export function LoginPage() {
         </button>{" "}
         ou{" "}
         <button onClick={() => navigate("register-recruiter")} className="font-semibold text-brand hover:underline">
-          comme recruteur
+          comme entreprise
         </button>
       </div>
     </AuthLayout>
@@ -144,7 +162,7 @@ export function CandidateLoginPage() {
 // ─── Recruiter Login Page ───────────────────────────────────────────────────
 
 export function RecruiterLoginPage() {
-  return <RoleLoginPage role="Recruiter" title="Espace Recruteur" subtitle="Connectez-vous pour gérer vos offres et candidatures." accent="navy" icon={Briefcase} />;
+  return <RoleLoginPage role="Recruiter" title="Espace Entreprise" subtitle="Connectez-vous pour gérer vos offres et candidatures." accent="navy" icon={Briefcase} />;
 }
 
 // ─── Generic Role Login (shared logic) ──────────────────────────────────────

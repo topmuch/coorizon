@@ -17,6 +17,7 @@ export type SiteRoute =
   | "login-recruiter"
   | "register-candidate"
   | "register-recruiter"
+  | "plus-coorizon"
   | "dashboard";
 
 export interface SiteRouterState {
@@ -42,6 +43,7 @@ const ALLOWED_ROUTES: SiteRoute[] = [
   "login-recruiter",
   "register-candidate",
   "register-recruiter",
+  "plus-coorizon",
   "dashboard",
 ];
 
