@@ -158,6 +158,8 @@ model User {
   phone         String?
   preferredLang String     @default("fr") // "fr" | "it"
   isActive      Boolean    @default(true)
+  // Candidates only: full platform access granted once the formation forfait is paid/validated
+  hasFormationAccess Boolean @default(false)
   emailVerified DateTime?
   lastLoginAt   DateTime?
   createdAt     DateTime   @default(now())

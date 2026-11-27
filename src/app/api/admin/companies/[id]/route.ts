@@ -255,3 +255,69 @@ export async function PUT(
     return authErrorResponse(error);
   }
 }
+
+/**
+ * DELETE /api/admin/companies/[id]
+ *
+ * Permanently delete a company and everything attached to it: documents,
+ * job offers, applications (with their history and interviews) and recruiter
+ * profiles. Immigration cases referencing the company are detached, not lost.
+ * Admin / SuperAdmin only.
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await requireSession();
+    if (!isAdmin(session.user.role)) {
+      return Response.json({ error: "Accès réservé aux administrateurs." }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    const result = await db.$transaction(async (tx) => {
+      const company = await tx.company.findUnique({
+        where: { id },
+        select: { id: true, legalName: true },
+      });
+      if (!company) return null;
+
+      await tx.interview.deleteMany({
+        where: { application: { jobOffer: { companyId: id } } },
+      });
+      await tx.applicationHistory.deleteMany({
+        where: { application: { jobOffer: { companyId: id } } },
+      });
+      await tx.application.deleteMany({
+        where: { jobOffer: { companyId: id } },
+      });
+      await tx.companyDocument.deleteMany({ where: { companyId: id } });
+      await tx.jobOffer.deleteMany({ where: { companyId: id } });
+      await tx.immigrationCase.updateMany({
+        where: { companyId: id },
+        data: { companyId: null },
+      });
+      await tx.recruiterProfile.deleteMany({ where: { companyId: id } });
+      await tx.company.delete({ where: { id } });
+      return company;
+    });
+
+    if (!result) {
+      return Response.json({ error: "Entreprise introuvable." }, { status: 404 });
+    }
+
+    await audit({
+      actorId: session.user.id,
+      action: "admin.company.delete",
+      targetType: "Company",
+      targetId: id,
+      metadata: { legalName: result.legalName },
+      req,
+    });
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+}

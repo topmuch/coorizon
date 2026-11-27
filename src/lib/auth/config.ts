@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { verifyPassword } from "./password";
 import { ROLES } from "@/lib/permissions";
+import { getPlatformSettings, isRoleDisabled, roleLabel } from "@/lib/platform-settings";
 
 /**
  * NextAuth configuration for COORIZON.
@@ -71,6 +72,19 @@ export const authOptions: NextAuthOptions = {
 
         if (user.status === "Suspended") {
           throw new Error("Votre compte a été suspendu. Contactez l'administration.");
+        }
+
+        // Platform-wide role toggle (Settings): disabled profiles cannot sign in.
+        try {
+          const settings = await getPlatformSettings();
+          if (isRoleDisabled(settings, user.role)) {
+            throw new Error(
+              `ROLE_DISABLED:Les connexions pour le profil « ${roleLabel(user.role)} » sont actuellement désactivées par l'administration.`
+            );
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message.startsWith("ROLE_DISABLED:")) throw e;
+          // Settings unavailable: do not block login on a configuration failure.
         }
 
         // Update last login timestamp (non-blocking)

@@ -2,9 +2,11 @@ import { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
-import { isAdmin } from "@/lib/permissions";
+import { isAdmin, isSuperAdmin, ROLES } from "@/lib/permissions";
 import { ALL_ROLES } from "@/lib/permissions";
 import type { Role } from "@/lib/permissions";
+import { hashPassword, validateEmail, validatePasswordPolicy } from "@/lib/auth/password";
+import { audit } from "@/lib/auth/audit";
 
 /**
  * Valid user statuses for filtering.
@@ -113,6 +115,104 @@ export async function GET(req: NextRequest) {
     ]);
 
     return Response.json({ users, total, page, pageSize });
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+}
+
+/**
+ * POST /api/admin/users
+ *
+ * Create a user directly from the back-office (active immediately).
+ * Creating a SuperAdmin requires the caller to be a SuperAdmin.
+ *
+ * Body: { firstName, lastName, email, password, role, phone? }
+ * Response: 201 { user }
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const session = await requireSession();
+    if (!isAdmin(session.user.role)) {
+      return Response.json({ error: "Accès réservé aux administrateurs." }, { status: 403 });
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return Response.json({ error: "Corps de requête invalide." }, { status: 400 });
+    }
+
+    const firstName = String(body.firstName ?? "").trim();
+    const lastName = String(body.lastName ?? "").trim();
+    const email = String(body.email ?? "").trim().toLowerCase();
+    const password = String(body.password ?? "");
+    const phone = String(body.phone ?? "").trim() || undefined;
+    const role = String(body.role ?? "") as Role;
+
+    if (!firstName || !lastName) {
+      return Response.json({ error: "Le prénom et le nom sont requis." }, { status: 400 });
+    }
+    if (!(ALL_ROLES as string[]).includes(role)) {
+      return Response.json({ error: "Rôle invalide." }, { status: 400 });
+    }
+    if (role === ROLES.SuperAdmin && !isSuperAdmin(session.user.role)) {
+      return Response.json(
+        { error: "Seul un SuperAdmin peut créer un compte SuperAdmin." },
+        { status: 403 }
+      );
+    }
+    const emailError = validateEmail(email);
+    if (emailError) {
+      return Response.json({ error: emailError }, { status: 400 });
+    }
+    const policyError = validatePasswordPolicy(password);
+    if (policyError) {
+      return Response.json({ error: policyError }, { status: 400 });
+    }
+
+    const existing = await db.user.findUnique({ where: { email }, select: { id: true } });
+    if (existing) {
+      return Response.json(
+        { error: "Un compte existe déjà avec cette adresse email." },
+        { status: 409 }
+      );
+    }
+
+    const passwordHash = await hashPassword(password);
+    const user = await db.user.create({
+      data: {
+        email,
+        passwordHash,
+        role,
+        status: "Active",
+        isActive: true,
+        firstName,
+        lastName,
+        phone,
+        emailVerified: new Date(),
+        ...(role === ROLES.Candidate ? { candidateProfile: { create: {} } } : {}),
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        createdAt: true,
+      },
+    });
+
+    await audit({
+      actorId: session.user.id,
+      action: "admin.user.create",
+      targetType: "User",
+      targetId: user.id,
+      metadata: { role, email: user.email },
+      req,
+    });
+
+    return Response.json({ user }, { status: 201 });
   } catch (error) {
     return authErrorResponse(error);
   }

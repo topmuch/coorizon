@@ -114,3 +114,49 @@ export async function POST(req: NextRequest) {
     return authErrorResponse(error);
   }
 }
+
+/**
+ * DELETE /api/admin/companies
+ *
+ * Permanently delete ALL companies and everything attached to them:
+ * documents, job offers, applications (with history and interviews) and
+ * recruiter profiles. Immigration cases are detached (companyId → null).
+ * This is a destructive bulk operation — Admin/SuperAdmin only.
+ *
+ * Response: { ok: true, deleted: { companies, jobOffers, applications } }
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await requireSession();
+    if (!isAdmin(session.user.role)) {
+      return Response.json({ error: "Accès réservé aux administrateurs." }, { status: 403 });
+    }
+
+    const deleted = await db.$transaction(async (tx) => {
+      await tx.interview.deleteMany({});
+      await tx.applicationHistory.deleteMany({});
+      const applications = await tx.application.deleteMany({});
+      await tx.companyDocument.deleteMany({});
+      const jobOffers = await tx.jobOffer.deleteMany({});
+      await tx.immigrationCase.updateMany({
+        where: { companyId: { not: null } },
+        data: { companyId: null },
+      });
+      await tx.recruiterProfile.deleteMany({});
+      const companies = await tx.company.deleteMany({});
+      return { companies: companies.count, jobOffers: jobOffers.count, applications: applications.count };
+    });
+
+    await audit({
+      actorId: session.user.id,
+      action: "admin.company.delete_all",
+      targetType: "Company",
+      metadata: deleted,
+      req,
+    });
+
+    return Response.json({ ok: true, deleted });
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+}

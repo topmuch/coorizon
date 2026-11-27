@@ -17,6 +17,22 @@ export async function GET(_req: NextRequest) {
         { status: 403 }
       );
     }
+
+    // Forfait gate: candidates without a validated formation forfait cannot access trainings.
+    const viewer = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { hasFormationAccess: true },
+    });
+    if (!viewer?.hasFormationAccess) {
+      return Response.json(
+        {
+          error: "Le forfait formation est requis pour accéder aux formations.",
+          code: "FORFAIT_REQUIRED",
+        },
+        { status: 403 }
+      );
+    }
+
     const candidateId = session.user.id;
 
     const [courses, enrollments] = await Promise.all([

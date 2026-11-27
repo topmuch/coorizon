@@ -17,6 +17,7 @@ import {
   Download,
   Trash2,
   Loader2,
+  AlertCircle,
   MessageCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -45,7 +46,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session-provider";
 import { useSiteRouter } from "@/lib/site-router";
 import { ROLE_LABELS, ALL_ROLES } from "@/lib/permissions";
@@ -65,6 +68,15 @@ interface AdminStats {
     revenue: number;
   };
   usersByRole: Record<string, number>;
+}
+
+// ─── Connection profiles access ─────────────────────────────────────────────
+
+interface RoleAccessRow {
+  role: Role;
+  label: string;
+  enabled: boolean;
+  locked: boolean;
 }
 
 // ─── Role metadata ─────────────────────────────────────────────────────────
@@ -298,6 +310,9 @@ export function AdminSettings() {
         </Card>
       )}
 
+      {/* Connection profiles access (Admin & SuperAdmin) */}
+      <RoleAccessCard />
+
       {/* General settings (SuperAdmin only) */}
       <Card>
         <CardHeader>
@@ -480,6 +495,169 @@ export function AdminSettings() {
       {/* ─── WhatsApp Numbers ─── */}
       <WhatsAppSettingsCard />
     </div>
+  );
+}
+
+// ─── Role access card (connection profiles) ────────────────────────────────
+
+function RoleAccessCard() {
+  const { toast } = useToast();
+  const [roles, setRoles] = React.useState<RoleAccessRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [pendingRole, setPendingRole] = React.useState<string | null>(null);
+
+  const fetchRoles = React.useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const res = await fetch("/api/admin/settings/roles", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(
+          data.error || "Échec du chargement des profils de connexion."
+        );
+      }
+      const data = (await res.json()) as { roles: RoleAccessRow[] };
+      setRoles(data.roles);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void fetchRoles();
+  }, [fetchRoles]);
+
+  const handleToggle = async (row: RoleAccessRow, nextValue: boolean) => {
+    if (row.locked) return;
+    const previous = roles;
+    // Optimistic update, reverted on error.
+    setRoles((rs) =>
+      rs.map((r) => (r.role === row.role ? { ...r, enabled: nextValue } : r))
+    );
+    setPendingRole(row.role);
+    try {
+      const res = await fetch("/api/admin/settings/roles", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role: row.role, enabled: nextValue }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        roles?: RoleAccessRow[];
+        error?: string;
+      };
+      if (!res.ok || !data.roles) {
+        throw new Error(
+          data.error || "Impossible de modifier l'accès de ce profil."
+        );
+      }
+      setRoles(data.roles);
+      toast({
+        title: nextValue ? "Profil activé" : "Profil désactivé",
+        description: nextValue
+          ? "Les comptes de ce profil peuvent à nouveau se connecter."
+          : "Les comptes de ce profil ne peuvent plus se connecter depuis les pages de connexion.",
+      });
+    } catch (e) {
+      setRoles(previous);
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setPendingRole(null);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-navy">
+          <Lock className="h-5 w-5 text-brand" />
+          Accès des profils de connexion
+        </CardTitle>
+        <CardDescription>
+          Désactivez un profil pour bloquer toutes les connexions de ce type
+          depuis les pages de connexion.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : loadError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erreur</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+              <span>{loadError}</span>
+              <Button size="sm" variant="outline" onClick={() => void fetchRoles()}>
+                Réessayer
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <ul className="space-y-2">
+            {roles.map((row) => {
+              const meta = ROLE_META.find((m) => m.key === row.role);
+              return (
+                <li
+                  key={row.role}
+                  className="flex items-center justify-between gap-3 rounded-md border bg-card p-3"
+                >
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        !meta && "border-border bg-muted text-muted-foreground"
+                      )}
+                      style={
+                        meta
+                          ? {
+                              color: meta.color,
+                              borderColor: `${meta.color}55`,
+                              backgroundColor: `${meta.color}14`,
+                            }
+                          : undefined
+                      }
+                    >
+                      {row.label}
+                    </Badge>
+                    {row.locked && (
+                      <span className="text-xs text-muted-foreground">
+                        Toujours actif
+                      </span>
+                    )}
+                  </div>
+                  <Switch
+                    checked={row.enabled}
+                    disabled={row.locked || pendingRole === row.role}
+                    onCheckedChange={(v) => void handleToggle(row, v)}
+                    aria-label={
+                      row.locked
+                        ? `${row.label} (toujours actif)`
+                        : row.enabled
+                        ? `Désactiver le profil ${row.label}`
+                        : `Activer le profil ${row.label}`
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

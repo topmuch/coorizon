@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/auth/audit";
 import { notify } from "@/lib/notifications";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
+import { findForfaitService } from "@/lib/forfait";
 
 /**
  * Payment confirmation endpoint (LOT 8 — COORIZON).
@@ -82,6 +83,7 @@ export async function POST(
         currency: true,
         description: true,
         status: true,
+        serviceId: true,
       },
     });
 
@@ -98,6 +100,21 @@ export async function POST(
         { error: "Accès refusé. Vous ne pouvez pas confirmer ce paiement." },
         { status: 403 }
       );
+    }
+
+    // The formation forfait can ONLY be validated by the administration.
+    if (payment.serviceId) {
+      const forfait = await findForfaitService();
+      if (forfait && payment.serviceId === forfait.id) {
+        return Response.json(
+          {
+            error:
+              "Le forfait formation doit être validé par l'administration. Votre demande est en cours de traitement.",
+            code: "FORFAIT_ADMIN_ONLY",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Only a Pending payment can be confirmed.

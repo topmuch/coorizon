@@ -31,7 +31,7 @@ import {
   ShieldAlert,
   Loader2,
   Plus,
-  ArrowRight,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,7 +87,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@/lib/auth/session-provider";
 import { ROLE_LABELS, ROLES, ALL_ROLES } from "@/lib/permissions";
 import type { Role } from "@/lib/permissions";
-import { useSiteRouter } from "@/lib/site-router";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -183,6 +182,26 @@ interface UserDetailResponse {
   counts: Record<string, number>;
   auditTrail: AuditTrailEntry[];
 }
+
+// ─── Create user form ──────────────────────────────────────────────────────
+
+interface CreateUserForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: string;
+}
+
+const EMPTY_CREATE_FORM: CreateUserForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  password: "",
+  role: "",
+};
 
 // ─── Display metadata ──────────────────────────────────────────────────────
 
@@ -363,7 +382,6 @@ const PAGE_SIZE = 10;
 export function AdminUsers() {
   const { toast } = useToast();
   const { user: sessionUser } = useSession();
-  const { navigate } = useSiteRouter();
   const isSuperAdmin = sessionUser?.role === ROLES.SuperAdmin;
 
   // List state
@@ -382,8 +400,10 @@ export function AdminUsers() {
   // Action state
   const [pendingId, setPendingId] = React.useState<string | null>(null);
 
-  // Add user dialog
+  // Add user dialog (creation form)
   const [showAddDialog, setShowAddDialog] = React.useState(false);
+  const [createForm, setCreateForm] = React.useState<CreateUserForm>(EMPTY_CREATE_FORM);
+  const [creating, setCreating] = React.useState(false);
 
   // Detail dialog
   const [detailUserId, setDetailUserId] = React.useState<string | null>(null);
@@ -398,6 +418,9 @@ export function AdminUsers() {
     () => users.find((u) => u.id === suspendUserId) ?? null,
     [users, suspendUserId]
   );
+
+  // Delete confirmation
+  const [deleteUserId, setDeleteUserId] = React.useState<string | null>(null);
 
   // Change role dialog
   const [changeRoleUserId, setChangeRoleUserId] = React.useState<string | null>(null);
@@ -559,6 +582,113 @@ export function AdminUsers() {
     }
   };
 
+  // Roles offered in the creation form (SuperAdmin only visible to SuperAdmin)
+  const createRoleOptions = React.useMemo<Role[]>(
+    () =>
+      isSuperAdmin
+        ? ALL_ROLES
+        : ALL_ROLES.filter((r) => r !== ROLES.SuperAdmin),
+    [isSuperAdmin]
+  );
+
+  const handleCreateUser = async () => {
+    const firstName = createForm.firstName.trim();
+    const lastName = createForm.lastName.trim();
+    const email = createForm.email.trim().toLowerCase();
+    const phone = createForm.phone.trim();
+
+    if (!firstName || !lastName || !email || !createForm.password || !createForm.role) {
+      toast({
+        variant: "destructive",
+        title: "Champs requis",
+        description:
+          "Prénom, nom, email, mot de passe et rôle sont obligatoires.",
+      });
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const payload: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        password: string;
+        role: string;
+        phone?: string;
+      } = {
+        firstName,
+        lastName,
+        email,
+        password: createForm.password,
+        role: createForm.role,
+      };
+      if (phone) payload.phone = phone;
+
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Échec de la création de l'utilisateur.");
+      }
+      const roleLabel = ROLE_LABELS[createForm.role as Role] ?? createForm.role;
+      toast({
+        title: "Utilisateur créé",
+        description: `Le compte ${email} a été créé avec le rôle « ${roleLabel} ».`,
+      });
+      setShowAddDialog(false);
+      setCreateForm(EMPTY_CREATE_FORM);
+      await fetchUsers();
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+    setPendingId(deleteUserId);
+    try {
+      const res = await fetch(`/api/admin/users/${deleteUserId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(
+          data.error || "Échec de la suppression de l'utilisateur."
+        );
+      }
+      toast({
+        title: "Utilisateur supprimé",
+        description:
+          "Le compte et toutes ses données associées ont été supprimés.",
+      });
+      setDeleteUserId(null);
+      await fetchUsers();
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+      });
+    } finally {
+      setPendingId(null);
+    }
+  };
+
   // ─── Derived ──────────────────────────────────────────────────────────
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -586,8 +716,15 @@ export function AdminUsers() {
     return true;
   };
 
+  const canDelete = (u: UserListItem): boolean => {
+    if (u.role === ROLES.SuperAdmin && !isSuperAdmin) return false;
+    if (sessionUser && u.id === sessionUser.id) return false;
+    return true;
+  };
+
   const openDetails = (userId: string) => setDetailUserId(userId);
   const openSuspend = (userId: string) => setSuspendUserId(userId);
+  const openDelete = (userId: string) => setDeleteUserId(userId);
   const openChangeRole = (userId: string, currentRole: Role) => {
     setChangeRoleUserId(userId);
     setSelectedRole(currentRole);
@@ -604,7 +741,12 @@ export function AdminUsers() {
             <Users className="size-6 text-navy" />
             <h1 className="text-2xl font-bold text-ink">Gestion des utilisateurs</h1>
           </div>
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button
+            onClick={() => {
+              setCreateForm(EMPTY_CREATE_FORM);
+              setShowAddDialog(true);
+            }}
+          >
             <Plus className="size-4" />
             <span className="hidden sm:inline">Ajouter un utilisateur</span>
             <span className="sm:hidden">Ajouter</span>
@@ -808,11 +950,13 @@ export function AdminUsers() {
                           canSuspend={canSuspend(u)}
                           canReactivate={canReactivate(u)}
                           canChangeRole={canChangeRole(u)}
+                          canDelete={canDelete(u)}
                           pending={pendingId === u.id}
                           onDetails={() => openDetails(u.id)}
                           onSuspend={() => openSuspend(u.id)}
                           onReactivate={() => handleReactivate(u.id)}
                           onChangeRole={() => openChangeRole(u.id, u.role)}
+                          onDelete={() => openDelete(u.id)}
                         />
                       </TableCell>
                     </TableRow>
@@ -849,11 +993,13 @@ export function AdminUsers() {
                           canSuspend={canSuspend(u)}
                           canReactivate={canReactivate(u)}
                           canChangeRole={canChangeRole(u)}
+                          canDelete={canDelete(u)}
                           pending={pendingId === u.id}
                           onDetails={() => openDetails(u.id)}
                           onSuspend={() => openSuspend(u.id)}
                           onReactivate={() => handleReactivate(u.id)}
                           onChangeRole={() => openChangeRole(u.id, u.role)}
+                          onDelete={() => openDelete(u.id)}
                         />
                       </div>
 
@@ -1250,6 +1396,48 @@ export function AdminUsers() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* ─── Delete confirmation ──────────────────────────────────────────── */}
+      <AlertDialog
+        open={!!deleteUserId}
+        onOpenChange={(o) => !o && setDeleteUserId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est définitive : profil, documents, candidatures,
+              formations, dossiers d'immigration, messages et paiements de cet
+              utilisateur seront supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pendingId === deleteUserId}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pendingId === deleteUserId}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteUser();
+              }}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {pendingId === deleteUserId ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-4" />
+                  Supprimer
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* ─── Change role dialog ───────────────────────────────────────────── */}
       <Dialog
         open={!!changeRoleUserId}
@@ -1341,49 +1529,135 @@ export function AdminUsers() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Add user dialog ─────────────────────────────────────────────── */}
+      {/* ─── Add user dialog (creation form) ────────────────────────────── */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="size-5 text-navy" />
               Ajouter un utilisateur
             </DialogTitle>
             <DialogDescription>
-              La création d'un compte se fait via le flux d'inscription
-              sécurisé de la plateforme. Choisissez le type de compte à créer.
+              Créez un compte directement depuis le back-office. Le compte sera
+              actif immédiatement après la création.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Pour des raisons de sécurité, les mots de passe sont définis par
-              l'utilisateur lui-même lors de son inscription. Vous serez
-              redirigé vers la page d'inscription correspondante.
-            </p>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="create-firstname">Prénom *</Label>
+                <Input
+                  id="create-firstname"
+                  value={createForm.firstName}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, firstName: e.target.value }))
+                  }
+                  placeholder="Ex. Awa"
+                  disabled={creating}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="create-lastname">Nom *</Label>
+                <Input
+                  id="create-lastname"
+                  value={createForm.lastName}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, lastName: e.target.value }))
+                  }
+                  placeholder="Ex. Ndiaye"
+                  disabled={creating}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="create-email">Email *</Label>
+              <Input
+                id="create-email"
+                type="email"
+                value={createForm.email}
+                onChange={(e) =>
+                  setCreateForm((f) => ({ ...f, email: e.target.value }))
+                }
+                placeholder="utilisateur@exemple.com"
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="create-phone">Téléphone</Label>
+              <Input
+                id="create-phone"
+                type="tel"
+                value={createForm.phone}
+                onChange={(e) =>
+                  setCreateForm((f) => ({ ...f, phone: e.target.value }))
+                }
+                placeholder="Optionnel"
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="create-password">Mot de passe *</Label>
+              <Input
+                id="create-password"
+                type="password"
+                value={createForm.password}
+                onChange={(e) =>
+                  setCreateForm((f) => ({ ...f, password: e.target.value }))
+                }
+                disabled={creating}
+              />
+              <p className="text-xs text-muted-foreground">
+                8 caractères min., au moins 1 lettre et 1 chiffre
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="create-role">Rôle *</Label>
+              <Select
+                value={createForm.role}
+                onValueChange={(v) =>
+                  setCreateForm((f) => ({ ...f, role: v }))
+                }
+                disabled={creating}
+              >
+                <SelectTrigger id="create-role" className="w-full">
+                  <SelectValue placeholder="Sélectionner un rôle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {createRoleOptions.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <DialogFooter>
             <Button
               variant="outline"
-              className="w-full sm:w-auto"
-              onClick={() => {
-                setShowAddDialog(false);
-                navigate("register-candidate");
-              }}
+              onClick={() => setShowAddDialog(false)}
+              disabled={creating}
             >
-              Créer un candidat
-              <ArrowRight className="size-4" />
+              Annuler
             </Button>
-            <Button
-              className="w-full sm:w-auto"
-              onClick={() => {
-                setShowAddDialog(false);
-                navigate("register-recruiter");
-              }}
-            >
-              Créer un recruteur
-              <ArrowRight className="size-4" />
+            <Button onClick={() => void handleCreateUser()} disabled={creating}>
+              {creating ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Création…
+                </>
+              ) : (
+                <>
+                  <Plus className="size-4" />
+                  Créer l'utilisateur
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1410,11 +1684,13 @@ interface UserActionsMenuProps {
   canSuspend: boolean;
   canReactivate: boolean;
   canChangeRole: boolean;
+  canDelete: boolean;
   pending: boolean;
   onDetails: () => void;
   onSuspend: () => void;
   onReactivate: () => void;
   onChangeRole: () => void;
+  onDelete: () => void;
 }
 
 function UserActionsMenu({
@@ -1422,15 +1698,22 @@ function UserActionsMenu({
   canSuspend,
   canReactivate,
   canChangeRole,
+  canDelete,
   pending,
   onDetails,
   onSuspend,
   onReactivate,
   onChangeRole,
+  onDelete,
 }: UserActionsMenuProps) {
   const isSuperAdmin = user.role === ROLES.SuperAdmin;
+  // Controlled menu so the dropdown can be closed before opening the
+  // delete confirmation dialog (avoids focus conflicts between Radix
+  // primitives).
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const closeMenu = () => setMenuOpen(false);
   return (
-    <DropdownMenu>
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -1450,13 +1733,21 @@ function UserActionsMenu({
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           Actions
         </DropdownMenuLabel>
-        <DropdownMenuItem onSelect={onDetails}>
+        <DropdownMenuItem
+          onSelect={() => {
+            closeMenu();
+            onDetails();
+          }}
+        >
           <Eye className="size-4" />
           Voir détails
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onSelect={onSuspend}
+          onSelect={() => {
+            closeMenu();
+            onSuspend();
+          }}
           disabled={!canSuspend}
           className="text-italian-red focus:text-italian-red"
         >
@@ -1464,28 +1755,42 @@ function UserActionsMenu({
           Suspendre
         </DropdownMenuItem>
         <DropdownMenuItem
-          onSelect={onReactivate}
+          onSelect={() => {
+            closeMenu();
+            onReactivate();
+          }}
           disabled={!canReactivate}
         >
           <UserCheck className="size-4" />
           Réactiver
         </DropdownMenuItem>
         {canChangeRole && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onChangeRole}>
-              <Shield className="size-4" />
-              Changer le rôle
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem
+            onSelect={() => {
+              closeMenu();
+              onChangeRole();
+            }}
+          >
+            <Shield className="size-4" />
+            Changer le rôle
+          </DropdownMenuItem>
         )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => {
+            closeMenu();
+            onDelete();
+          }}
+          disabled={!canDelete}
+          className="text-italian-red focus:text-italian-red focus:bg-italian-red/10"
+        >
+          <Trash2 className="size-4" />
+          Supprimer
+        </DropdownMenuItem>
         {isSuperAdmin && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
-              Les super administrateurs ne peuvent pas être suspendus.
-            </div>
-          </>
+          <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
+            Les super administrateurs ne peuvent pas être suspendus.
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

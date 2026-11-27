@@ -21,6 +21,7 @@ import {
   Hash,
   Plus,
   ArrowRight,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -339,6 +340,14 @@ export function AdminCompanies() {
   const [suspendCompany, setSuspendCompany] = React.useState<Company | null>(null);
   const [suspending, setSuspending] = React.useState(false);
 
+  // Delete one company confirm state
+  const [deleteCompany, setDeleteCompany] = React.useState<Company | null>(null);
+  const [deletingCompany, setDeletingCompany] = React.useState(false);
+
+  // Delete all companies confirm state
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = React.useState(false);
+  const [deletingAll, setDeletingAll] = React.useState(false);
+
   // Add company dialog
   const [showAddDialog, setShowAddDialog] = React.useState(false);
 
@@ -457,6 +466,85 @@ export function AdminCompanies() {
     setSuspendCompany(null);
   };
 
+  // ── Delete one company handler ──────────────────────────────────────
+  const handleDeleteCompany = async () => {
+    if (!deleteCompany) return;
+    setDeletingCompany(true);
+    try {
+      const res = await fetch(`/api/admin/companies/${deleteCompany.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(
+          data.error || "Échec de la suppression de l'entreprise."
+        );
+      }
+      toast({
+        title: "Entreprise supprimée",
+        description: `« ${deleteCompany.legalName} » et toutes ses données liées ont été supprimées.`,
+      });
+      setDeleteCompany(null);
+      void load();
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingCompany(false);
+    }
+  };
+
+  // ── Delete all companies handler ────────────────────────────────────
+  const handleDeleteAllCompanies = async () => {
+    setDeletingAll(true);
+    try {
+      const res = await fetch("/api/admin/companies", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        deleted?: { companies: number; jobOffers: number; applications: number };
+        error?: string;
+      };
+      if (!res.ok || !data.ok || !data.deleted) {
+        throw new Error(
+          data.error || "Échec de la suppression des entreprises."
+        );
+      }
+      const { companies, jobOffers, applications } = data.deleted;
+      if (companies === 0) {
+        toast({
+          title: "Aucune entreprise à supprimer",
+          description:
+            "Il n'y a aucune entreprise enregistrée sur la plateforme.",
+        });
+      } else {
+        toast({
+          title: "Entreprises supprimées",
+          description: `${companies} entreprise(s), ${jobOffers} offre(s), ${applications} candidature(s)`,
+        });
+      }
+      setShowDeleteAllDialog(false);
+      void load();
+    } catch (e) {
+      toast({
+        title: "Suppression impossible",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -520,20 +608,35 @@ export function AdminCompanies() {
         </Card>
       ) : (
         <>
-          {/* Filter tabs */}
-          <Tabs
-            value={tab}
-            onValueChange={(v) => setTab(v as FilterTab)}
-            className="w-full"
-          >
-            <TabsList className="flex w-full max-w-2xl flex-wrap">
-              {(Object.keys(TAB_LABELS) as FilterTab[]).map((t) => (
-                <TabsTrigger key={t} value={t} className="flex-1">
-                  {TAB_LABELS[t]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          {/* Filter tabs + bulk delete */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Tabs
+              value={tab}
+              onValueChange={(v) => setTab(v as FilterTab)}
+              className="w-full"
+            >
+              <TabsList className="flex w-full max-w-2xl flex-wrap">
+                {(Object.keys(TAB_LABELS) as FilterTab[]).map((t) => (
+                  <TabsTrigger key={t} value={t} className="flex-1">
+                    {TAB_LABELS[t]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteAllDialog(true)}
+              disabled={deletingAll}
+              className="shrink-0 border-italian-red/30 text-italian-red hover:bg-italian-red/10 hover:text-italian-red"
+            >
+              {deletingAll ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              Tout supprimer
+            </Button>
+          </div>
 
           {/* Desktop table */}
           <Card className="hidden lg:block">
@@ -566,6 +669,7 @@ export function AdminCompanies() {
                       onReactivate={() => updateStatus(company, "Validated")}
                       onRequeue={() => updateStatus(company, "Pending")}
                       onView={() => openDetail(company)}
+                      onDelete={() => setDeleteCompany(company)}
                     />
                   ))}
                 </TableBody>
@@ -589,6 +693,7 @@ export function AdminCompanies() {
                   onReactivate={() => updateStatus(company, "Validated")}
                   onRequeue={() => updateStatus(company, "Pending")}
                   onView={() => openDetail(company)}
+                  onDelete={() => setDeleteCompany(company)}
                 />
               </li>
             ))}
@@ -753,6 +858,102 @@ export function AdminCompanies() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete one company confirm */}
+      <AlertDialog
+        open={!!deleteCompany}
+        onOpenChange={(open) => {
+          if (!open && !deletingCompany) {
+            setDeleteCompany(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-navy">
+              <Trash2 className="h-5 w-5 text-italian-red" />
+              Supprimer l'entreprise ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Toutes les données liées seront supprimées : offres d'emploi,
+              candidatures, entretiens, documents et profils recruteurs.
+              Action définitive.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingCompany}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteCompany();
+              }}
+              disabled={deletingCompany}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {deletingCompany ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete all companies confirm */}
+      <AlertDialog
+        open={showDeleteAllDialog}
+        onOpenChange={(open) => {
+          if (!open && !deletingAll) {
+            setShowDeleteAllDialog(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-navy">
+              <Trash2 className="h-5 w-5 text-italian-red" />
+              Supprimer toutes les entreprises ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action supprime TOUTES les entreprises ainsi que leurs
+              offres, candidatures, entretiens, documents et profils
+              recruteurs. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAll}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteAllCompanies();
+              }}
+              disabled={deletingAll}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {deletingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Tout supprimer
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* ─── Add company dialog ─────────────────────────────────────────── */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-md">
@@ -825,6 +1026,7 @@ interface CompanyActionsProps {
   onReactivate: () => void;
   onRequeue: () => void;
   onView: () => void;
+  onDelete: () => void;
 }
 
 function CompanyActions({
@@ -836,6 +1038,7 @@ function CompanyActions({
   onReactivate,
   onRequeue,
   onView,
+  onDelete,
 }: CompanyActionsProps) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -929,6 +1132,22 @@ function CompanyActions({
           Repasser en attente
         </Button>
       )}
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onDelete}
+        disabled={changing}
+        title="Supprimer l'entreprise"
+        className="border-italian-red/30 text-italian-red hover:bg-italian-red/10 hover:text-italian-red"
+      >
+        {changing ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Trash2 className="h-3.5 w-3.5" />
+        )}
+        Supprimer
+      </Button>
     </div>
   );
 }

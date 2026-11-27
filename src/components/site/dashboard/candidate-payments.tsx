@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/format-currency";
+import { useCandidateAccess } from "@/lib/candidate-access";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 // Local client-side types. The server returns Date fields as ISO strings.
@@ -87,19 +89,6 @@ interface PaymentsResponse {
 }
 
 // ─── Display helpers ───────────────────────────────────────────────────────
-
-function formatPrice(amount: number, currency: string): string {
-  try {
-    const value = amount.toLocaleString("fr-FR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    if (currency === "EUR" || currency === "€") return `${value} €`;
-    return `${value} ${currency}`;
-  } catch {
-    return `${amount.toFixed(2)} ${currency}`;
-  }
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -187,6 +176,13 @@ const STATUS_META: Record<PaymentStatus, StatusMeta> = {
 
 export function CandidatePayments() {
   const { toast } = useToast();
+  // Rendered inside CandidateAccessProvider — used to identify forfait
+  // payments, which can ONLY be validated by the administration.
+  const { access } = useCandidateAccess();
+  const forfaitName = access?.forfait?.name ?? null;
+
+  const isForfaitPayment = (payment: PaymentItem): boolean =>
+    forfaitName !== null && payment.service?.name === forfaitName;
 
   const [services, setServices] = React.useState<ServiceItem[]>([]);
   const [payments, setPayments] = React.useState<PaymentItem[]>([]);
@@ -429,7 +425,7 @@ export function CandidatePayments() {
       >
         <StatCard
           label="Total payé"
-          value={formatPrice(totalPaid, paidCurrency)}
+          value={formatAmount(totalPaid, paidCurrency)}
           icon={Euro}
           iconBoxClass="bg-emerald-100 text-emerald-700"
         />
@@ -505,6 +501,7 @@ export function CandidatePayments() {
               <PaymentRow
                 key={payment.id}
                 payment={payment}
+                isForfait={isForfaitPayment(payment)}
                 onConfirm={() => void handleConfirm(payment.id)}
                 confirming={confirming}
                 onPrintInvoice={() => handlePrintInvoice(payment)}
@@ -526,6 +523,9 @@ export function CandidatePayments() {
           activePayment && void handleConfirm(activePayment.id)
         }
         confirming={confirming}
+        isForfaitPayment={
+          activePayment ? isForfaitPayment(activePayment) : false
+        }
       />
 
       {/* Printable invoice (off-screen, visible only when printing) */}
@@ -601,7 +601,7 @@ function ServiceCard({ service, onBuy, disabled }: ServiceCardProps) {
         </p>
         <div className="mt-auto flex items-center justify-between gap-3">
           <span className="text-xl font-bold text-navy">
-            {formatPrice(service.price, service.currency)}
+            {formatAmount(service.price, service.currency)}
           </span>
           <Button onClick={onBuy} disabled={disabled} size="sm">
             {disabled ? (
@@ -621,6 +621,7 @@ function ServiceCard({ service, onBuy, disabled }: ServiceCardProps) {
 
 interface PaymentRowProps {
   payment: PaymentItem;
+  isForfait: boolean;
   onConfirm: () => void;
   confirming: boolean;
   onPrintInvoice: () => void;
@@ -628,6 +629,7 @@ interface PaymentRowProps {
 
 function PaymentRow({
   payment,
+  isForfait,
   onConfirm,
   confirming,
   onPrintInvoice,
@@ -678,10 +680,16 @@ function PaymentRow({
           {/* Right: amount + actions */}
           <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
             <span className="text-lg font-bold text-navy">
-              {formatPrice(payment.amount, payment.currency)}
+              {formatAmount(payment.amount, payment.currency)}
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              {payment.status === "Pending" && (
+              {payment.status === "Pending" && isForfait && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                  <Clock className="h-3 w-3" aria-hidden />
+                  Validation admin en cours
+                </span>
+              )}
+              {payment.status === "Pending" && !isForfait && (
                 <>
                   <Button
                     size="sm"
@@ -723,6 +731,7 @@ interface PaymentDialogProps {
   payment: PaymentItem | null;
   onPay: () => void;
   confirming: boolean;
+  isForfaitPayment: boolean;
 }
 
 function PaymentDialog({
@@ -731,6 +740,7 @@ function PaymentDialog({
   payment,
   onPay,
   confirming,
+  isForfaitPayment,
 }: PaymentDialogProps) {
   // Card form fields — purely cosmetic, NOT functional.
   const [cardNumber, setCardNumber] = React.useState("");
@@ -775,7 +785,7 @@ function PaymentDialog({
                 </p>
               </div>
               <span className="text-lg font-bold text-navy">
-                {formatPrice(payment.amount, payment.currency)}
+                {formatAmount(payment.amount, payment.currency)}
               </span>
             </div>
           </div>
@@ -869,14 +879,21 @@ function PaymentDialog({
           >
             Annuler
           </Button>
-          <Button onClick={onPay} disabled={confirming}>
-            {confirming ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Lock className="mr-2 h-4 w-4" />
-            )}
-            Payer maintenant
-          </Button>
+          {isForfaitPayment ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+              <Clock className="h-3 w-3" aria-hidden />
+              Validation admin en cours
+            </span>
+          ) : (
+            <Button onClick={onPay} disabled={confirming}>
+              {confirming ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Lock className="mr-2 h-4 w-4" />
+              )}
+              Payer maintenant
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -954,7 +971,7 @@ function PrintableInvoice({ payment }: { payment: PaymentItem }) {
                 : formatDate(payment.createdAt)}
             </td>
             <td className="py-3 text-right font-semibold">
-              {formatPrice(payment.amount, payment.currency)}
+              {formatAmount(payment.amount, payment.currency)}
             </td>
           </tr>
         </tbody>
@@ -964,7 +981,7 @@ function PrintableInvoice({ payment }: { payment: PaymentItem }) {
               Total payé
             </td>
             <td className="py-3 text-right text-lg font-bold">
-              {formatPrice(payment.amount, payment.currency)}
+              {formatAmount(payment.amount, payment.currency)}
             </td>
           </tr>
         </tfoot>

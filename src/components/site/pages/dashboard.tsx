@@ -51,11 +51,14 @@ import { AgentCandidates } from "../dashboard/agent-candidates";
 import { AgentSettings } from "../dashboard/agent-settings";
 import { AdminImmigration } from "../dashboard/admin-immigration";
 import { AdminPayments } from "../dashboard/admin-payments";
+import { AdminForfait } from "../dashboard/admin-forfait";
 import { AdminAutomation } from "../dashboard/admin-automation";
 import { AdminAi } from "../dashboard/admin-ai";
 import { AdminTraining } from "../dashboard/admin-training";
 import { AdminVideos } from "../dashboard/admin-videos";
 import { CandidateVideos } from "../dashboard/candidate-videos";
+import { CandidateAccessProvider } from "@/lib/candidate-access";
+import { ForfaitGate } from "../dashboard/candidate-forfait-gate";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
   "overview", "profile", "cv", "documents", "jobs", "applications",
@@ -69,7 +72,7 @@ const RECRUITER_SECTIONS: RecruiterSection[] = [
 
 const ADMIN_SECTIONS: AdminSection[] = [
   "overview", "users", "companies", "offers", "applications",
-  "training", "immigration", "payments", "videos", "cms", "audit",
+  "training", "immigration", "payments", "forfait", "videos", "cms", "audit",
   "automation", "ai", "settings",
 ];
 
@@ -134,11 +137,19 @@ export function DashboardPage() {
         case "documents":
           return <CandidateDocuments />;
         case "jobs":
-          return <CandidateJobs />;
+          return (
+            <ForfaitGate>
+              <CandidateJobs />
+            </ForfaitGate>
+          );
         case "applications":
           return <CandidateApplications />;
         case "training":
-          return <CandidateMyTraining />;
+          return (
+            <ForfaitGate>
+              <CandidateMyTraining />
+            </ForfaitGate>
+          );
         case "exams":
           return <CandidateExams />;
         case "certificates":
@@ -161,7 +172,9 @@ export function DashboardPage() {
     };
 
     return (
-      <CandidateShell section={validSection}>{renderSection()}</CandidateShell>
+      <CandidateAccessProvider>
+        <CandidateShell section={validSection}>{renderSection()}</CandidateShell>
+      </CandidateAccessProvider>
     );
   }
 
@@ -257,6 +270,8 @@ export function DashboardPage() {
           return <AdminImmigration />;
         case "payments":
           return <AdminPayments />;
+        case "forfait":
+          return <AdminForfait />;
         case "videos":
           return <AdminVideos />;
         case "settings":

@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Plane,
   CreditCard,
+  Wallet,
   FileText,
   ScrollText,
   Settings,
@@ -40,6 +41,7 @@ export type AdminSection =
   | "training"
   | "immigration"
   | "payments"
+  | "forfait"
   | "cms"
   | "audit"
   | "automation"
@@ -63,6 +65,7 @@ export const adminNav: AdminNavSection[] = [
   { id: "training", label: "Formations", icon: GraduationCap },
   { id: "immigration", label: "Immigration", icon: Plane },
   { id: "payments", label: "Commercial", icon: CreditCard },
+  { id: "forfait", label: "Forfait Formation", icon: Wallet },
   { id: "cms", label: "Contenu (CMS)", icon: FileText },
   { id: "audit", label: "Journaux d'audit", icon: ScrollText },
   { id: "automation", label: "Automatisations", icon: Zap },

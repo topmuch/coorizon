@@ -22,13 +22,14 @@ import {
 import { cn } from "@/lib/utils";
 import { useSiteRouter } from "@/lib/site-router";
 import { useSession } from "@/lib/auth/session-provider";
+import { useCandidateAccess } from "@/lib/candidate-access";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { Logo } from "../logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, LogOut, Moon, Sun } from "lucide-react";
+import { Menu, LogOut, Moon, Sun, Lock } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export type DashboardSection =
@@ -82,7 +83,16 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
   const { navigate } = useSiteRouter();
   const { user, signOut } = useSession();
   const { theme, setTheme } = useTheme();
+  const { access } = useCandidateAccess();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  // Sections locked until the formation forfait is validated by the
+  // administration. The nav still navigates — the gated section itself
+  // renders the ForfaitGate purchase screen.
+  const isGatedItem = (item: NavSection) =>
+    access !== null &&
+    !access.hasFormationAccess &&
+    (item.id === "jobs" || item.id === "training");
 
   const initials = user
     ? ((user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")).toUpperCase() || user.email[0].toUpperCase()
@@ -137,6 +147,9 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
                     <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
                       {item.lot}
                     </span>
+                  )}
+                  {isGatedItem(item) && (
+                    <Lock className="ml-auto h-3.5 w-3.5 text-amber-500" />
                   )}
                 </button>
               </li>

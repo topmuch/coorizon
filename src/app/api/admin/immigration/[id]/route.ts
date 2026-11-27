@@ -254,3 +254,47 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+/**
+ * DELETE /api/admin/immigration/[id]
+ *
+ * Permanently delete an immigration case and its tasks. Admin/SuperAdmin only.
+ */
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  try {
+    const session = await requireSession();
+    if (!isAdmin(session.user.role)) {
+      return Response.json({ error: "Accès réservé aux administrateurs." }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    const result = await db.$transaction(async (tx) => {
+      const existing = await tx.immigrationCase.findUnique({
+        where: { id },
+        select: { id: true, candidateId: true },
+      });
+      if (!existing) return null;
+      await tx.immigrationTask.deleteMany({ where: { caseId: id } });
+      await tx.immigrationCase.delete({ where: { id } });
+      return existing;
+    });
+
+    if (!result) {
+      return Response.json({ error: "Dossier introuvable." }, { status: 404 });
+    }
+
+    await audit({
+      actorId: session.user.id,
+      action: "admin.case.delete",
+      targetType: "ImmigrationCase",
+      targetId: id,
+      metadata: { candidateId: result.candidateId },
+      req,
+    });
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+}

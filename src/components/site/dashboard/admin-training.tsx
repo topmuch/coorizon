@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +38,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -79,6 +91,17 @@ type FilterTab = "all" | "published" | "drafts";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
+type CourseLevel = (typeof LEVELS)[number];
+
+const LEVEL_LABELS: Record<CourseLevel, string> = {
+  A1: "A1 — Débutant",
+  A2: "A2 — Élémentaire",
+  B1: "B1 — Intermédiaire",
+  B2: "B2 — Avancé",
+  C1: "C1 — Autonome",
+  C2: "C2 — Maîtrise",
+};
+
 const LEVEL_STYLES: Record<string, string> = {
   A1: "bg-brand/10 text-brand border-brand/20",
   A2: "bg-brand-green/10 text-brand-green border-brand-green/20",
@@ -96,7 +119,10 @@ export function AdminTraining() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [filter, setFilter] = React.useState<FilterTab>("all");
-  const [showAddDialog, setShowAddDialog] = React.useState(false);
+  const [courseDialogOpen, setCourseDialogOpen] = React.useState(false);
+  const [editingCourse, setEditingCourse] = React.useState<Course | null>(null);
+  const [deleteCourse, setDeleteCourse] = React.useState<Course | null>(null);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -116,6 +142,53 @@ export function AdminTraining() {
   React.useEffect(() => {
     load();
   }, [load]);
+
+  const openCreate = () => {
+    setEditingCourse(null);
+    setCourseDialogOpen(true);
+  };
+
+  const openEdit = (course: Course) => {
+    setEditingCourse(course);
+    setCourseDialogOpen(true);
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!deleteCourse) return;
+    setDeletingId(deleteCourse.id);
+    try {
+      const res = await fetch(`/api/admin/training/${deleteCourse.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(
+          data.error || "Échec de la suppression de la formation."
+        );
+      }
+      toast({
+        title: "Formation supprimée",
+        description: `« ${deleteCourse.title} » a été supprimée définitivement.`,
+      });
+      setDeleteCourse(null);
+      void load();
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const deletePending =
+    deleteCourse !== null && deletingId === deleteCourse.id;
 
   const publishedCount = React.useMemo(
     () => courses.filter((c) => c.isPublished).length,
@@ -156,7 +229,7 @@ export function AdminTraining() {
             Gérez le catalogue de formations en italien (A1 à C2).
           </p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" />
           <span className="ml-1">Nouvelle formation</span>
         </Button>
@@ -401,16 +474,24 @@ export function AdminTraining() {
                             size="sm"
                             variant="ghost"
                             className="h-8 w-8 p-0"
-                            onClick={() =>
-                              toast({
-                                title: "Fonctionnalité en cours de développement",
-                                description:
-                                  "L'édition détaillée des formations sera disponible prochainement.",
-                              })
-                            }
+                            onClick={() => openEdit(course)}
                             aria-label="Modifier la formation"
                           >
                             <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-italian-red hover:bg-italian-red/10 hover:text-italian-red"
+                            onClick={() => setDeleteCourse(course)}
+                            disabled={deletingId === course.id}
+                            aria-label="Supprimer la formation"
+                          >
+                            {deletingId === course.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -445,7 +526,7 @@ export function AdminTraining() {
             {filter === "all" && (
               <Button
                 className="mt-4"
-                onClick={() => setShowAddDialog(true)}
+                onClick={openCreate}
               >
                 <Plus className="h-4 w-4" />
                 Nouvelle formation
@@ -455,50 +536,166 @@ export function AdminTraining() {
         </Card>
       )}
 
-      {/* Add dialog (placeholder) */}
-      {showAddDialog && (
-        <AddCourseDialog onClose={() => setShowAddDialog(false)} />
+      {/* Course dialog (create / edit) */}
+      {courseDialogOpen && (
+        <CourseDialog
+          course={editingCourse}
+          onClose={() => {
+            setCourseDialogOpen(false);
+            setEditingCourse(null);
+          }}
+          onSaved={load}
+        />
       )}
+
+      {/* Delete course confirmation */}
+      <AlertDialog
+        open={!!deleteCourse}
+        onOpenChange={(o) => !o && setDeleteCourse(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette formation ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Les modules, leçons et inscriptions liées seront supprimés.
+              Action définitive.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePending}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletePending}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteCourse();
+              }}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {deletePending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-// ─── Add Course Dialog (placeholder) ─────────────────────────────────────
+// ─── Course dialog (create / edit) ───────────────────────────────────────
 
-function AddCourseDialog({ onClose }: { onClose: () => void }) {
+interface CourseDialogProps {
+  course: Course | null;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function CourseDialog({ course, onClose, onSaved }: CourseDialogProps) {
   const { toast } = useToast();
+  const isEdit = course !== null;
+  const [saving, setSaving] = React.useState(false);
   const [form, setForm] = React.useState({
-    title: "",
-    subtitle: "",
-    description: "",
-    level: "A1",
-    durationHours: "",
-    isPublished: false,
+    title: course?.title ?? "",
+    subtitle: course?.subtitle ?? "",
+    description: course?.description ?? "",
+    level: course?.level ?? "A1",
+    durationHours:
+      course && course.durationHours !== null
+        ? String(course.durationHours)
+        : "",
+    isPublished: course?.isPublished ?? false,
   });
 
   const set = (key: keyof typeof form, value: string | boolean) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const handleSubmit = () => {
-    toast({
-      title: "Fonctionnalité en cours de développement",
-      description:
-        "La création de formations sera disponible prochainement. Le formulaire est affiché à titre d'aperçu.",
-    });
-    onClose();
+  const handleSubmit = async () => {
+    const title = form.title.trim();
+    const description = form.description.trim();
+    if (!title || !description) {
+      toast({
+        variant: "destructive",
+        title: "Champs requis",
+        description: "Le titre et la description sont obligatoires.",
+      });
+      return;
+    }
+
+    const durationRaw = form.durationHours.trim();
+    let durationHours: number | null = null;
+    if (durationRaw) {
+      const parsed = Number.parseInt(durationRaw, 10);
+      if (!Number.isNaN(parsed)) durationHours = Math.max(0, parsed);
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(
+        isEdit && course
+          ? `/api/admin/training/${course.id}`
+          : "/api/admin/training",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title,
+            subtitle: form.subtitle.trim() || null,
+            description,
+            level: form.level,
+            durationHours,
+            isPublished: form.isPublished,
+          }),
+        }
+      );
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(
+          data.error ||
+            (isEdit
+              ? "Échec de la modification de la formation."
+              : "Échec de la création de la formation.")
+        );
+      }
+      toast({
+        title: isEdit ? "Formation modifiée" : "Formation créée",
+        description: title,
+      });
+      onSaved();
+      onClose();
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-brand" />
-            Nouvelle formation
+            {isEdit ? "Modifier la formation" : "Nouvelle formation"}
           </DialogTitle>
           <DialogDescription>
-            Créez une nouvelle formation en italien. Les champs ci-dessous
-            sont un aperçu de la fiche à venir.
+            {isEdit
+              ? "Modifiez les informations de la formation puis enregistrez vos changements."
+              : "Créez une nouvelle formation en italien pour le catalogue."}
           </DialogDescription>
         </DialogHeader>
 
@@ -510,6 +707,7 @@ function AddCourseDialog({ onClose }: { onClose: () => void }) {
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
               placeholder="Ex: Italien débutant — Premiers pas"
+              disabled={saving}
             />
           </div>
 
@@ -520,6 +718,7 @@ function AddCourseDialog({ onClose }: { onClose: () => void }) {
               value={form.subtitle}
               onChange={(e) => set("subtitle", e.target.value)}
               placeholder="Ex: Niveau A1 du CECRL"
+              disabled={saving}
             />
           </div>
 
@@ -531,6 +730,7 @@ function AddCourseDialog({ onClose }: { onClose: () => void }) {
               onChange={(e) => set("description", e.target.value)}
               placeholder="Décrivez le contenu et les objectifs de la formation..."
               rows={3}
+              disabled={saving}
             />
           </div>
 
@@ -540,6 +740,7 @@ function AddCourseDialog({ onClose }: { onClose: () => void }) {
               <Select
                 value={form.level}
                 onValueChange={(v) => set("level", v)}
+                disabled={saving}
               >
                 <SelectTrigger id="course-level">
                   <SelectValue />
@@ -547,14 +748,14 @@ function AddCourseDialog({ onClose }: { onClose: () => void }) {
                 <SelectContent>
                   {LEVELS.map((l) => (
                     <SelectItem key={l} value={l}>
-                      {l}
+                      {LEVEL_LABELS[l]}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="course-duration">Durée (heures)</Label>
+              <Label htmlFor="course-duration">Durée en heures</Label>
               <Input
                 id="course-duration"
                 type="number"
@@ -562,6 +763,7 @@ function AddCourseDialog({ onClose }: { onClose: () => void }) {
                 value={form.durationHours}
                 onChange={(e) => set("durationHours", e.target.value)}
                 placeholder="60"
+                disabled={saving}
               />
             </div>
           </div>
@@ -579,15 +781,27 @@ function AddCourseDialog({ onClose }: { onClose: () => void }) {
               id="course-published"
               checked={form.isPublished}
               onCheckedChange={(v) => set("isPublished", v)}
+              disabled={saving}
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit}>Créer</Button>
+          <Button onClick={() => void handleSubmit()} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Enregistrement…
+              </>
+            ) : isEdit ? (
+              "Enregistrer les modifications"
+            ) : (
+              "Créer"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

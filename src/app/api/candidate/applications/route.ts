@@ -62,6 +62,22 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
+
+    // Forfait gate: applying requires the validated formation forfait.
+    const viewer = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { hasFormationAccess: true },
+    });
+    if (!viewer?.hasFormationAccess) {
+      return Response.json(
+        {
+          error: "Le forfait formation est requis pour postuler aux offres d'emploi.",
+          code: "FORFAIT_REQUIRED",
+        },
+        { status: 403 }
+      );
+    }
+
     const candidateId = session.user.id;
 
     let body: ApplyBody;

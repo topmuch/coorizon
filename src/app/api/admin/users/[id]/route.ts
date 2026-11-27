@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireSession, authErrorResponse } from "@/lib/auth/session";
-import { isAdmin, ROLES } from "@/lib/permissions";
+import { isAdmin, isSuperAdmin, ROLES } from "@/lib/permissions";
 import type { Role } from "@/lib/permissions";
 import { audit } from "@/lib/auth/audit";
 
@@ -322,6 +322,95 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     });
 
     return Response.json({ user: updated }, { status: 200 });
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+}
+
+/**
+ * DELETE /api/admin/users/[id]
+ *
+ * Permanently delete a user and all their owned data (profiles, documents,
+ * applications, enrollments, exam attempts, certificates, immigration cases,
+ * messages, notifications, payments — handled by database cascades).
+ *
+ * Guards:
+ *  - cannot delete your own account;
+ *  - SuperAdmin accounts can only be deleted by a SuperAdmin;
+ *  - the last SuperAdmin cannot be deleted.
+ *
+ * Required non-cascade references (job offers author, application history
+ * author, video uploads) are reassigned to the acting admin so nothing is lost.
+ */
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  try {
+    const session = await requireSession();
+    if (!isAdmin(session.user.role)) {
+      return Response.json({ error: "Accès réservé aux administrateurs." }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    if (id === session.user.id) {
+      return Response.json(
+        { error: "Vous ne pouvez pas supprimer votre propre compte." },
+        { status: 400 }
+      );
+    }
+
+    const target = await db.user.findUnique({ where: { id }, select: { id: true, role: true, email: true } });
+    if (!target) {
+      return Response.json({ error: "Utilisateur introuvable." }, { status: 404 });
+    }
+
+    if (target.role === ROLES.SuperAdmin) {
+      if (!isSuperAdmin(session.user.role)) {
+        return Response.json(
+          { error: "Seul un SuperAdmin peut supprimer un compte SuperAdmin." },
+          { status: 403 }
+        );
+      }
+      const superAdminCount = await db.user.count({ where: { role: ROLES.SuperAdmin } });
+      if (superAdminCount <= 1) {
+        return Response.json(
+          { error: "Impossible de supprimer le dernier SuperAdmin de la plateforme." },
+          { status: 400 }
+        );
+      }
+    }
+
+    await db.$transaction([
+      // Interviews where the user is candidate or recruiter (required FK otherwise blocks deletion)
+      db.interview.deleteMany({
+        where: { OR: [{ candidateId: id }, { recruiterId: id }] },
+      }),
+      // Required FK references preserved by reassigning to the acting admin
+      db.applicationHistory.updateMany({
+        where: { changedById: id },
+        data: { changedById: session.user.id },
+      }),
+      db.jobOffer.updateMany({
+        where: { createdById: id },
+        data: { createdById: session.user.id },
+      }),
+      db.videoResource.updateMany({
+        where: { uploadedById: id },
+        data: { uploadedById: session.user.id },
+      }),
+      db.videoAssignment.deleteMany({ where: { assignedById: id } }),
+      db.user.delete({ where: { id } }),
+    ]);
+
+    await audit({
+      actorId: session.user.id,
+      action: "admin.user.delete",
+      targetType: "User",
+      targetId: id,
+      metadata: { email: target.email, role: target.role },
+      req,
+    });
+
+    return Response.json({ ok: true });
   } catch (error) {
     return authErrorResponse(error);
   }

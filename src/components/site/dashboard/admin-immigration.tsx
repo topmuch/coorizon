@@ -15,6 +15,7 @@ import {
   Loader2,
   ShieldAlert,
   Briefcase,
+  Trash2,
 } from "lucide-react";
 import {
   Card,
@@ -257,6 +258,10 @@ export function AdminImmigration() {
   const [statusCase, setStatusCase] = React.useState<ImmigrationCaseListItem | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
 
+  // Delete confirmation state
+  const [deleteCase, setDeleteCase] = React.useState<ImmigrationCaseListItem | null>(null);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // ── Fetch agents for the filter dropdown ──────────────────────────────
@@ -343,6 +348,46 @@ export function AdminImmigration() {
     toast({ title: "Succès", description: message });
     await fetchCases();
   };
+
+  // ── Delete one case ────────────────────────────────────────────────
+  const handleDeleteCase = async () => {
+    if (!deleteCase) return;
+    setDeletingId(deleteCase.id);
+    try {
+      const res = await fetch(`/api/admin/immigration/${deleteCase.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Échec de la suppression du dossier.");
+      }
+      const candidateName =
+        fullName(deleteCase.candidate.firstName, deleteCase.candidate.lastName) ||
+        deleteCase.candidate.email;
+      setDeleteCase(null);
+      toast({
+        title: "Dossier supprimé",
+        description: `Le dossier de ${candidateName} et ses tâches ont été supprimés.`,
+      });
+      await fetchCases();
+    } catch (e) {
+      toast({
+        title: "Échec",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const deletePending =
+    deleteCase !== null && deletingId === deleteCase.id;
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
@@ -543,6 +588,20 @@ export function AdminImmigration() {
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteCase(c)}
+                          disabled={deletingId === c.id}
+                          aria-label="Supprimer le dossier"
+                          className="text-italian-red hover:bg-italian-red/10 hover:text-italian-red"
+                        >
+                          {deletingId === c.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -613,6 +672,20 @@ export function AdminImmigration() {
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Statut
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 border-italian-red/30 text-italian-red hover:bg-italian-red/10 hover:text-italian-red"
+                      onClick={() => setDeleteCase(c)}
+                      disabled={deletingId === c.id}
+                      aria-label="Supprimer le dossier"
+                    >
+                      {deletingId === c.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -706,6 +779,46 @@ export function AdminImmigration() {
         agents={agents}
         onSuccess={(msg) => handleMutationSuccess(msg)}
       />
+
+      {/* Delete case confirmation */}
+      <AlertDialog
+        open={!!deleteCase}
+        onOpenChange={(o) => !o && setDeleteCase(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce dossier ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le dossier et ses tâches seront définitivement supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePending}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletePending}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteCase();
+              }}
+              className="bg-italian-red text-white hover:bg-italian-red/90"
+            >
+              {deletePending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

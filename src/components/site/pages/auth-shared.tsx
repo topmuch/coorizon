@@ -608,12 +608,30 @@ function RoleLoginPage({
       if (!res || res.error) {
         const msg = res?.error || "Identifiants incorrects.";
         let friendly = msg;
-        if (msg.includes("Pending")) {
+        if (msg.startsWith("ROLE_DISABLED:")) {
+          friendly = msg.slice("ROLE_DISABLED:".length);
+        } else if (msg.includes("Pending")) {
           friendly = "Votre compte est en attente de validation par l'administration.";
         } else if (msg.includes("Suspended") || msg.includes("désactivé")) {
           friendly = msg;
         } else if (msg === "CredentialsSignin" || msg.includes("Identifiants")) {
-          friendly = "Email ou mot de passe incorrect.";
+          // NextAuth masks the authorize() message: check whether the profile
+          // has been disabled platform-wide before showing a generic error.
+          try {
+            const check = await fetch("/api/auth/check-login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: email.trim().toLowerCase() }),
+            });
+            const data = await check.json();
+            if (data?.roleDisabled) {
+              friendly = `Les connexions pour le profil « ${data.roleLabel} » sont actuellement désactivées par l'administration.`;
+            } else {
+              friendly = "Email ou mot de passe incorrect.";
+            }
+          } catch {
+            friendly = "Email ou mot de passe incorrect.";
+          }
         }
         setError(friendly);
         setLoading(false);

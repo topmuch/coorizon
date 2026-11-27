@@ -27,6 +27,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Forfait gate: candidates without a validated formation forfait cannot browse offers.
+    const viewer = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { hasFormationAccess: true },
+    });
+    if (!viewer?.hasFormationAccess) {
+      return Response.json(
+        {
+          error: "Le forfait formation est requis pour accéder aux offres d'emploi.",
+          code: "FORFAIT_REQUIRED",
+        },
+        { status: 403 }
+      );
+    }
+
     const url = req.nextUrl;
     const q = url.searchParams.get("q")?.trim() || "";
     const sector = url.searchParams.get("sector")?.trim() || "";
