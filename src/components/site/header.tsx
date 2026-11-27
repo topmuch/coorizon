@@ -174,7 +174,7 @@ export function SiteHeader() {
                 Connexion
               </Button>
               <Button onClick={() => handleNav("register-candidate")} className="bg-brand hover:bg-brand/90">
-                Je suis candidat
+                Inscription Candidat
               </Button>
             </>
           )}
@@ -243,7 +243,7 @@ export function SiteHeader() {
                         Connexion
                       </Button>
                       <Button className="w-full bg-brand hover:bg-brand/90" onClick={() => handleNav("register-candidate")}>
-                        Je suis candidat
+                        Inscription Candidat
                       </Button>
                       <Button variant="secondary" className="w-full" onClick={() => handleNav("register-recruiter")}>
                         Je suis entreprise

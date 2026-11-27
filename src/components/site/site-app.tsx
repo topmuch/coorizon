@@ -5,7 +5,14 @@ import { SiteRouterProvider, useSiteRouter } from "@/lib/site-router";
 import { SiteHeader } from "./header";
 import { SiteFooter } from "./footer";
 import { HomePage } from "./pages/home";
-import { LoginPage, CandidateLoginPage, RecruiterLoginPage } from "./pages/auth-shared";
+import {
+  LoginPage,
+  CandidateLoginPage,
+  RecruiterLoginPage,
+  TrainerLoginPage,
+  AgentLoginPage,
+  AdminLoginPage,
+} from "./pages/auth-shared";
 import { RegisterCandidatePage } from "./pages/register-candidate";
 import { RegisterRecruiterPage } from "./pages/register-recruiter";
 import { JobOffersPage } from "./pages/job-offers";
@@ -50,6 +57,12 @@ function PageRenderer() {
         return <CandidateLoginPage />;
       case "login-recruiter":
         return <RecruiterLoginPage />;
+      case "login-trainer":
+        return <TrainerLoginPage />;
+      case "login-agent":
+        return <AgentLoginPage />;
+      case "login-admin":
+        return <AdminLoginPage />;
       case "register-candidate":
         return <RegisterCandidatePage />;
       case "register-recruiter":
@@ -63,25 +76,31 @@ function PageRenderer() {
     }
   }, [route]);
 
-  // The dashboard is a full-screen app shell with its own sidebar/header.
-  // The public site header/footer are hidden on the dashboard route.
+  // The dashboard and the login pages are full-screen immersive views:
+  // the public site header/footer/widgets are hidden there.
   const isDashboard = route === "dashboard";
+  const isLogin = route === "login" || route.startsWith("login-");
+  const isImmersive = isDashboard || isLogin;
 
   return (
     <div className="flex min-h-screen flex-col">
-      {!isDashboard && <SiteHeader />}
+      {!isImmersive && <SiteHeader />}
       <main className="flex-1">{page}</main>
-      {!isDashboard && <SiteFooter />}
+      {!isImmersive && <SiteFooter />}
       {isDashboard && <AiAssistantWidget />}
-      {!isDashboard && <WhatsAppWidget />}
+      {!isImmersive && <WhatsAppWidget />}
     </div>
   );
 }
 
 export function SiteApp() {
+  // Suspense is required because SiteRouterProvider uses useSearchParams
+  // (Next.js requirement during prerendering).
   return (
-    <SiteRouterProvider>
-      <PageRenderer />
-    </SiteRouterProvider>
+    <React.Suspense fallback={null}>
+      <SiteRouterProvider>
+        <PageRenderer />
+      </SiteRouterProvider>
+    </React.Suspense>
   );
 }

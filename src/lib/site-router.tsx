@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export type SiteRoute =
   | "home"
@@ -15,6 +16,9 @@ export type SiteRoute =
   | "login"
   | "login-candidate"
   | "login-recruiter"
+  | "login-trainer"
+  | "login-agent"
+  | "login-admin"
   | "register-candidate"
   | "register-recruiter"
   | "plus-coorizon"
@@ -41,6 +45,9 @@ const ALLOWED_ROUTES: SiteRoute[] = [
   "login",
   "login-candidate",
   "login-recruiter",
+  "login-trainer",
+  "login-agent",
+  "login-admin",
   "register-candidate",
   "register-recruiter",
   "plus-coorizon",
@@ -79,9 +86,26 @@ function buildUrl(route: SiteRoute, params?: Record<string, string>): string {
 }
 
 export function SiteRouterProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = React.useState<{ route: SiteRoute; params: URLSearchParams }>(
-    () => getCurrentState()
+  // Next.js provides the real pathname/search on both server and client, so the
+  // first client render matches the SSR output (no hydration mismatch on direct
+  // URL access). Client-side navigation then drives the state via pushState.
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [state, setState] = React.useState<{ route: SiteRoute; params: URLSearchParams }>(() =>
+    parsePath(pathname, searchParams.toString())
   );
+
+  // Keep in sync when the Next.js router path changes (back/forward, external redirects).
+  React.useEffect(() => {
+    setState((prev) => {
+      const next = parsePath(pathname, searchParams.toString());
+      if (prev.route === next.route && prev.params.toString() === next.params.toString()) {
+        return prev;
+      }
+      return next;
+    });
+  }, [pathname, searchParams]);
 
   React.useEffect(() => {
     const onPopState = () => {
