@@ -12,8 +12,6 @@ import { CandidateForfait } from "../dashboard/candidate-forfait";
 import { CandidateOverview } from "../dashboard/candidate-overview";
 import { CandidateProfile } from "../dashboard/candidate-profile";
 import { CandidateDocuments } from "../dashboard/candidate-documents";
-import { CandidateCv } from "../dashboard/candidate-cv";
-import { CandidateJobs } from "../dashboard/candidate-jobs";
 import { CandidateApplications } from "../dashboard/candidate-applications";
 import { CandidateSettings } from "../dashboard/candidate-settings";
 import { ComingSoonCard } from "../dashboard/coming-soon";
@@ -62,14 +60,13 @@ import { AdminAutomation } from "../dashboard/admin-automation";
 import { AdminAi } from "../dashboard/admin-ai";
 import { AdminTraining } from "../dashboard/admin-training";
 import { AdminVideos } from "../dashboard/admin-videos";
-import { CandidateVideos } from "../dashboard/candidate-videos";
 import { CandidateAccessProvider, useCandidateAccess } from "@/lib/candidate-access";
 import { ForfaitGate } from "../dashboard/candidate-forfait-gate";
 
 const CANDIDATE_SECTIONS: DashboardSection[] = [
-  "overview", "profile", "cv", "documents", "jobs", "applications",
+  "overview", "profile", "documents", "applications",
   "training", "exams", "certificates", "immigration", "payments",
-  "videos", "messages", "notifications", "settings", "forfait",
+  "messages", "notifications", "settings", "forfait",
 ];
 
 const RECRUITER_SECTIONS: RecruiterSection[] = [
@@ -133,16 +130,8 @@ function CandidateDashboard() {
         return <CandidateOverview />;
       case "profile":
         return <CandidateProfile />;
-      case "cv":
-        return <CandidateCv />;
       case "documents":
         return <CandidateDocuments />;
-      case "jobs":
-        return (
-          <ForfaitGate>
-            <CandidateJobs />
-          </ForfaitGate>
-        );
       case "applications":
         return <CandidateApplications />;
       case "training":
@@ -159,8 +148,6 @@ function CandidateDashboard() {
         return <CandidateImmigration />;
       case "payments":
         return <CandidatePayments />;
-      case "videos":
-        return <CandidateVideos />;
       case "messages":
         return <CandidateMessaging />;
       case "notifications":

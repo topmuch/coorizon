@@ -127,6 +127,44 @@ function getThumbnail(video: CandidateVideo): string | null {
   return null;
 }
 
+function extractYouTubeId(url: string): string | null {
+  const patterns = [
+    /youtube\.com\/watch\?v=([\w-]{11})/,
+    /youtu\.be\/([\w-]{11})/,
+    /youtube\.com\/embed\/([\w-]{11})/,
+    /youtube\.com\/shorts\/([\w-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function extractVimeoId(url: string): string | null {
+  const m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Build an in-site embed URL so YouTube/Vimeo videos play inside the
+ * COORIZON player instead of redirecting the user to an external site.
+ */
+function getEmbedUrl(video: CandidateVideo): string | null {
+  if (video.type === "youtube") {
+    const id = video.embedId ?? extractYouTubeId(video.url);
+    return id
+      ? `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`
+      : null;
+  }
+  if (video.type === "vimeo") {
+    const id = video.embedId ?? extractVimeoId(video.url);
+    return id ? `https://player.vimeo.com/video/${id}` : null;
+  }
+  // MP4 files are played with the native <video> element.
+  return null;
+}
+
 function isCompleted(v: CandidateVideo): boolean {
   return !!v.view?.completed || (v.view?.progressPct ?? 0) >= 80;
 }
@@ -216,11 +254,12 @@ export function CandidateVideos() {
         <div className="space-y-1">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
             <Video className="h-6 w-6 text-brand" />
-            Mes vidéos
+            Vidéos de formation
           </h1>
           <p className="text-sm text-muted-foreground">
-            Visionnez les vidéos e-learning qui vous sont assignées. Votre
-            progression est enregistrée automatiquement.
+            Visionnez les vidéos e-learning qui vous sont assignées, sans
+            quitter le lecteur du site. Votre progression est enregistrée
+            automatiquement.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -454,6 +493,9 @@ function VideoPlayerDialog({
   const { toast } = useToast();
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
+  // In-site embed URL (YouTube/Vimeo) — the video never leaves the site.
+  const embedUrl = video.type !== "mp4" ? getEmbedUrl(video) : null;
+
   // Local tracking state, seeded from existing view.
   const [watchTime, setWatchTime] = React.useState<number>(
     video.view?.watchTime ?? 0
@@ -582,7 +624,7 @@ function VideoPlayerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Player — MP4 plays inline, YouTube/Vimeo redirect to external site */}
+        {/* Player — everything plays in-site: MP4 via <video>, YouTube/Vimeo via embedded player */}
         {video.type === "mp4" ? (
           <div className="overflow-hidden rounded-md border bg-black">
             <video
@@ -593,48 +635,30 @@ function VideoPlayerDialog({
               preload="metadata"
             />
           </div>
-        ) : (
-          <div className="overflow-hidden rounded-md border">
-            {/* Thumbnail with play button → opens YouTube/Vimeo in new tab */}
-            <a
-              href={video.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative block aspect-video w-full bg-black"
-            >
-              {getThumbnail(video) ? (
-                <img
-                  src={getThumbnail(video) || ""}
-                  alt={video.title}
-                  className="h-full w-full object-cover opacity-90"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                  {typeIcon(video.type, "h-10 w-10")}
-                </div>
-              )}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors hover:bg-black/40">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg transition-transform hover:scale-110">
-                  {video.type === "youtube" ? (
-                    <Youtube className="h-8 w-8 text-white" />
-                  ) : (
-                    <PlayCircle className="h-8 w-8 text-white" />
-                  )}
-                </div>
-              </div>
-            </a>
-            <div className="flex items-center justify-center gap-2 bg-muted/50 px-4 py-3">
-              <Button
-                size="sm"
-                onClick={() => window.open(video.url, "_blank", "noopener,noreferrer")}
-              >
-                {video.type === "youtube" ? <Youtube className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
-                Regarder sur {video.type === "youtube" ? "YouTube" : "Vimeo"}
-              </Button>
+        ) : embedUrl ? (
+          <div className="overflow-hidden rounded-md border bg-black">
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                src={embedUrl}
+                title={video.title}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+            <div className="flex items-center justify-center bg-muted/50 px-4 py-2">
               <span className="text-xs text-muted-foreground">
-                S'ouvre dans un nouvel onglet
+                Lecture directement dans le lecteur du site — sans quitter COORIZON
               </span>
             </div>
+          </div>
+        ) : (
+          <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-md border bg-muted text-center text-muted-foreground">
+            <Film className="h-10 w-10" />
+            <p className="max-w-xs text-sm">
+              Cette vidéo ne peut pas être lue dans le lecteur du site.
+            </p>
           </div>
         )}
 

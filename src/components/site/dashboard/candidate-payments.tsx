@@ -3,7 +3,6 @@
 import * as React from "react";
 import {
   CreditCard,
-  ShoppingCart,
   CheckCircle2,
   Clock,
   XCircle,
@@ -15,31 +14,19 @@ import {
   RefreshCw,
   AlertTriangle,
   RotateCcw,
-  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardHeader,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { formatAmount } from "@/lib/format-currency";
@@ -49,17 +36,6 @@ import { useCandidateAccess } from "@/lib/candidate-access";
 // Local client-side types. The server returns Date fields as ISO strings.
 
 type PaymentStatus = "Pending" | "Paid" | "Failed" | "Refunded" | "Cancelled";
-
-interface ServiceItem {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  price: number;
-  currency: string;
-  durationLabel: string | null;
-  isPublished: boolean;
-}
 
 interface PaymentService {
   id: string;
@@ -78,10 +54,6 @@ interface PaymentItem {
   paidAt: string | null;
   createdAt: string;
   service: PaymentService | null;
-}
-
-interface ServicesResponse {
-  services: ServiceItem[];
 }
 
 interface PaymentsResponse {
@@ -184,41 +156,25 @@ export function CandidatePayments() {
   const isForfaitPayment = (payment: PaymentItem): boolean =>
     forfaitName !== null && payment.service?.name === forfaitName;
 
-  const [services, setServices] = React.useState<ServiceItem[]>([]);
   const [payments, setPayments] = React.useState<PaymentItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Payment dialog state.
-  const [activePayment, setActivePayment] = React.useState<PaymentItem | null>(
-    null
-  );
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [creating, setCreating] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
 
   // Invoice print state.
   const [printingInvoice, setPrintingInvoice] =
     React.useState<PaymentItem | null>(null);
 
-  // ── Load catalog + history ──────────────────────────────────────────────
+  // ── Load history ────────────────────────────────────────────────────────
   const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [servicesRes, paymentsRes] = await Promise.all([
-        fetch("/api/services", { credentials: "same-origin" }),
-        fetch("/api/candidate/payments", { credentials: "same-origin" }),
-      ]);
+      const paymentsRes = await fetch("/api/candidate/payments", {
+        credentials: "same-origin",
+      });
 
-      if (!servicesRes.ok) {
-        const data = (await servicesRes.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        throw new Error(
-          data.error ?? "Impossible de charger le catalogue des prestations."
-        );
-      }
       if (!paymentsRes.ok) {
         const data = (await paymentsRes.json().catch(() => ({}))) as {
           error?: string;
@@ -226,9 +182,7 @@ export function CandidatePayments() {
         throw new Error(data.error ?? "Impossible de charger vos paiements.");
       }
 
-      const servicesData = (await servicesRes.json()) as ServicesResponse;
       const paymentsData = (await paymentsRes.json()) as PaymentsResponse;
-      setServices(servicesData.services ?? []);
       setPayments(paymentsData.payments ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Une erreur est survenue.");
@@ -255,39 +209,6 @@ export function CandidatePayments() {
     };
   }, [printingInvoice]);
 
-  // ── Buy a service: create a Pending payment then open the dialog ────────
-  const handleBuy = async (service: ServiceItem) => {
-    setCreating(true);
-    try {
-      const res = await fetch("/api/candidate/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ serviceId: service.id }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        payment?: PaymentItem;
-        error?: string;
-      };
-      if (!res.ok || !data.payment) {
-        throw new Error(
-          data.error ?? "Impossible de créer la commande de paiement."
-        );
-      }
-      setActivePayment(data.payment);
-      setDialogOpen(true);
-    } catch (e) {
-      toast({
-        title: "Erreur",
-        description:
-          e instanceof Error ? e.message : "Une erreur est survenue.",
-        variant: "destructive",
-      });
-    } finally {
-      setCreating(false);
-    }
-  };
-
   // ── Confirm a payment (server-side) ─────────────────────────────────────
   const handleConfirm = async (paymentId: string) => {
     setConfirming(true);
@@ -312,8 +233,6 @@ export function CandidatePayments() {
         title: "Paiement confirmé",
         description: `Votre paiement a été confirmé. Facture ${data.payment.invoiceNumber}.`,
       });
-      setDialogOpen(false);
-      setActivePayment(null);
       await load();
     } catch (e) {
       toast({
@@ -412,8 +331,8 @@ export function CandidatePayments() {
           Mes paiements
         </h1>
         <p className="text-sm text-muted-foreground">
-          Achetez une prestation et suivez l&rsquo;état de vos paiements. La
-          confirmation est systématiquement vérifiée côté serveur.
+          Consultez l&rsquo;historique de vos paiements et téléchargez vos
+          factures. La confirmation est systématiquement vérifiée côté serveur.
         </p>
       </header>
 
@@ -436,43 +355,6 @@ export function CandidatePayments() {
           iconBoxClass="bg-amber-100 text-amber-700"
         />
       </section>
-
-      {/* Service catalog */}
-      <section className="space-y-4" data-no-print>
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5 text-navy" aria-hidden />
-          <h2 className="text-lg font-semibold text-navy">
-            Catalogue des prestations
-          </h2>
-        </div>
-
-        {services.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <ShoppingCart className="h-8 w-8 text-muted-foreground" aria-hidden />
-              <CardTitle className="text-base text-navy">
-                Aucune prestation disponible
-              </CardTitle>
-              <CardDescription>
-                Le catalogue est vide pour le moment. Revenez plus tard.
-              </CardDescription>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                onBuy={() => void handleBuy(service)}
-                disabled={creating}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <Separator data-no-print />
 
       {/* Payment history */}
       <section className="space-y-4" data-no-print>
@@ -511,23 +393,6 @@ export function CandidatePayments() {
         )}
       </section>
 
-      {/* Payment dialog (simulated card form) */}
-      <PaymentDialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setActivePayment(null);
-        }}
-        payment={activePayment}
-        onPay={() =>
-          activePayment && void handleConfirm(activePayment.id)
-        }
-        confirming={confirming}
-        isForfaitPayment={
-          activePayment ? isForfaitPayment(activePayment) : false
-        }
-      />
-
       {/* Printable invoice (off-screen, visible only when printing) */}
       {printingInvoice && (
         <div data-print-root="true" data-print-invoice>
@@ -565,52 +430,6 @@ function StatCard({ label, value, icon: Icon, iconBoxClass }: StatCardProps) {
             {label}
           </p>
           <p className="truncate text-xl font-bold text-navy">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Service card ──────────────────────────────────────────────────────────
-
-interface ServiceCardProps {
-  service: ServiceItem;
-  onBuy: () => void;
-  disabled: boolean;
-}
-
-function ServiceCard({ service, onBuy, disabled }: ServiceCardProps) {
-  const cat = categoryMeta(service.category);
-  return (
-    <Card className="flex flex-col">
-      <CardHeader className="space-y-2 pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base text-navy">{service.name}</CardTitle>
-          <Badge className={cn("shrink-0", cat.className)}>{cat.label}</Badge>
-        </div>
-        {service.durationLabel ? (
-          <CardDescription className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" aria-hidden />
-            {service.durationLabel}
-          </CardDescription>
-        ) : null}
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="line-clamp-3 text-sm text-muted-foreground">
-          {service.description}
-        </p>
-        <div className="mt-auto flex items-center justify-between gap-3">
-          <span className="text-xl font-bold text-navy">
-            {formatAmount(service.price, service.currency)}
-          </span>
-          <Button onClick={onBuy} disabled={disabled} size="sm">
-            {disabled ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ShoppingCart className="mr-2 h-4 w-4" />
-            )}
-            Acheter
-          </Button>
         </div>
       </CardContent>
     </Card>
@@ -721,196 +540,6 @@ function PaymentRow({
       </CardContent>
     </Card>
   );
-}
-
-// ─── Payment dialog (simulated card form) ──────────────────────────────────
-
-interface PaymentDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  payment: PaymentItem | null;
-  onPay: () => void;
-  confirming: boolean;
-  isForfaitPayment: boolean;
-}
-
-function PaymentDialog({
-  open,
-  onOpenChange,
-  payment,
-  onPay,
-  confirming,
-  isForfaitPayment,
-}: PaymentDialogProps) {
-  // Card form fields — purely cosmetic, NOT functional.
-  const [cardNumber, setCardNumber] = React.useState("");
-  const [expiry, setExpiry] = React.useState("");
-  const [cvc, setCvc] = React.useState("");
-
-  // Reset the cosmetic form whenever a new payment is opened.
-  const paymentId = payment?.id;
-  React.useEffect(() => {
-    if (open) {
-      setCardNumber("");
-      setExpiry("");
-      setCvc("");
-    }
-  }, [open, paymentId]);
-
-  if (!payment) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-navy">
-            <CreditCard className="h-5 w-5 text-brand" aria-hidden />
-            Paiement sécurisé
-          </DialogTitle>
-          <DialogDescription>
-            Finalisez votre achat. La confirmation est traitée côté serveur.
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Order summary */}
-        <div className="space-y-3">
-          <div className="rounded-lg border border-border bg-muted/40 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-navy">
-                  {payment.description}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Commande #{payment.id.slice(-8).toUpperCase()}
-                </p>
-              </div>
-              <span className="text-lg font-bold text-navy">
-                {formatAmount(payment.amount, payment.currency)}
-              </span>
-            </div>
-          </div>
-
-          {/* Simulated card form — UI only, NOT functional */}
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="pay-card-number" className="text-xs">
-                Numéro de carte
-              </Label>
-              <div className="relative">
-                <Input
-                  id="pay-card-number"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="4242 4242 4242 4242"
-                  value={cardNumber}
-                  onChange={(e) =>
-                    setCardNumber(formatCardNumber(e.target.value))
-                  }
-                  maxLength={19}
-                  className="pr-9 font-mono"
-                  aria-describedby="pay-card-hint"
-                />
-                <CreditCard
-                  className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden
-                />
-              </div>
-              <p id="pay-card-hint" className="sr-only">
-                Champ de démonstration — aucune donnée n&rsquo;est enregistrée
-                ni transmise.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="pay-expiry" className="text-xs">
-                  Expiration
-                </Label>
-                <Input
-                  id="pay-expiry"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="MM/AA"
-                  value={expiry}
-                  onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-                  maxLength={5}
-                  className="font-mono"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pay-cvc" className="text-xs">
-                  CVC
-                </Label>
-                <Input
-                  id="pay-cvc"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="123"
-                  value={cvc}
-                  onChange={(e) =>
-                    setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))
-                  }
-                  maxLength={4}
-                  className="font-mono"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Server-side confirmation notice */}
-          <Alert className="border-brand/20 bg-brand/[0.04]">
-            <ShieldCheck className="h-4 w-4 text-brand-green" aria-hidden />
-            <AlertTitle className="text-sm text-navy">
-              Paiement sécurisé
-            </AlertTitle>
-            <AlertDescription className="text-xs text-muted-foreground">
-              La confirmation est traitée côté serveur. Aucune donnée
-              bancaire n&rsquo;est enregistrée — ce formulaire est une
-              démonstration.
-            </AlertDescription>
-          </Alert>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={confirming}
-          >
-            Annuler
-          </Button>
-          {isForfaitPayment ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-              <Clock className="h-3 w-3" aria-hidden />
-              Validation admin en cours
-            </span>
-          ) : (
-            <Button onClick={onPay} disabled={confirming}>
-              {confirming ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Lock className="mr-2 h-4 w-4" />
-              )}
-              Payer maintenant
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Card formatters (cosmetic only) ───────────────────────────────────────
-
-function formatCardNumber(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 16);
-  return digits.replace(/(.{4})/g, "$1 ").trim();
-}
-
-function formatExpiry(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
 }
 
 // ─── Printable invoice ─────────────────────────────────────────────────────

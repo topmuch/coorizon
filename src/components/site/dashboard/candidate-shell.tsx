@@ -4,16 +4,13 @@ import * as React from "react";
 import {
   LayoutDashboard,
   User,
-  FileText,
   FolderOpen,
-  Briefcase,
   Send,
   GraduationCap,
   ClipboardCheck,
   Award,
   Plane,
   CreditCard,
-  Video,
   MessageSquare,
   Bell,
   Settings,
@@ -37,16 +34,13 @@ import { useTheme } from "next-themes";
 export type DashboardSection =
   | "overview"
   | "profile"
-  | "cv"
   | "documents"
-  | "jobs"
   | "applications"
   | "training"
   | "exams"
   | "certificates"
   | "immigration"
   | "payments"
-  | "videos"
   | "messages"
   | "notifications"
   | "settings"
@@ -62,16 +56,13 @@ export interface NavSection {
 export const candidateNav: NavSection[] = [
   { id: "overview", label: "Mon tableau de bord", icon: LayoutDashboard },
   { id: "profile", label: "Mon profil", icon: User },
-  { id: "cv", label: "Mon CV", icon: FileText },
   { id: "documents", label: "Mes documents", icon: FolderOpen },
-  { id: "jobs", label: "Offres d'emploi", icon: Briefcase },
   { id: "applications", label: "Mes candidatures", icon: Send },
-  { id: "training", label: "Mes formations", icon: GraduationCap },
+  { id: "training", label: "Formation", icon: GraduationCap },
   { id: "exams", label: "Mes examens", icon: ClipboardCheck },
   { id: "certificates", label: "Mes certificats", icon: Award },
   { id: "immigration", label: "Mon dossier administratif", icon: Plane },
   { id: "payments", label: "Mes paiements", icon: CreditCard },
-  { id: "videos", label: "Médiathèque", icon: Video },
   { id: "messages", label: "Messagerie", icon: MessageSquare },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "settings", label: "Paramètres", icon: Settings },
@@ -92,7 +83,6 @@ const FORFAIT_NAV: NavSection = { id: "forfait", label: "Forfait", icon: Shoppin
 export const UNPAID_ALLOWED_SECTIONS: DashboardSection[] = [
   "forfait",
   "profile",
-  "cv",
   "messages",
   "notifications",
   "settings",

@@ -31,6 +31,7 @@ import {
 
 import { useSiteRouter, type SiteRoute } from "@/lib/site-router";
 import { useToast } from "@/hooks/use-toast";
+import { CandidateVideos } from "./candidate-videos";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -407,6 +408,11 @@ function CatalogView({ navigate }: { navigate: NavigateFn }) {
           </div>
         )}
       </section>
+
+      <Separator />
+
+      {/* Vidéos de formation — ancien onglet « Médiathèque » intégré ici */}
+      <CandidateVideos />
     </div>
   );
 }

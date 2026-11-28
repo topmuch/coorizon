@@ -368,7 +368,7 @@ export function CandidateApplications() {
             </p>
             <Button
               className="mt-4 bg-brand text-white hover:bg-brand/90"
-              onClick={() => navigate("dashboard", { section: "jobs" })}
+              onClick={() => navigate("jobs")}
             >
               <Briefcase className="mr-2 h-4 w-4" />
               Voir les offres

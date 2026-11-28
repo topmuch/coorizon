@@ -31,7 +31,7 @@ const UNLOCK_ITEMS = [
   "Offres d'emploi publiées",
   "Candidatures aux offres",
   "Mon dossier administratif",
-  "Médiathèque et vidéos",
+  "Vidéos de formation",
 ] as const;
 
 function formatDate(value: string | Date | null | undefined): string {

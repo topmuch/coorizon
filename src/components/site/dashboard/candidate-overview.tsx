@@ -358,7 +358,7 @@ export function CandidateOverview() {
       icon: Briefcase,
       title: "Voir les offres",
       description: "Parcourez les annonces en Italie",
-      onClick: () => navigate("dashboard", { section: "jobs" }),
+      onClick: () => navigate("jobs"),
     },
     {
       icon: FileCheck,
