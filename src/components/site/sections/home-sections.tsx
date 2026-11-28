@@ -441,7 +441,7 @@ export function FinalCtaSection() {
                 onClick={() => navigate("register-recruiter")}
                 className="border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
               >
-                Espace recruteur
+                Espace entreprise
               </Button>
             </div>
           </div>

@@ -25,6 +25,7 @@ import { formatAmount } from "@/lib/format-currency";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABELS } from "@/lib/permissions";
+import { useUnreadNotificationsCount } from "@/hooks/use-unread-notifications";
 import { Logo } from "../logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -113,6 +114,10 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
   const hasFullAccess = access?.hasFormationAccess ?? true;
   const navItems = hasFullAccess ? candidateNav : restrictedNav;
 
+  // Visual notification: unread count polled so the « Notifications » menu
+  // item lights up as soon as a new notification arrives.
+  const unreadNotifications = useUnreadNotificationsCount({ refreshKey: section });
+
   const initials = user
     ? ((user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")).toUpperCase() || user.email[0].toUpperCase()
     : "";
@@ -175,6 +180,19 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
                 >
                   <item.icon className={cn("h-4 w-4 shrink-0", isForfaitItem && !active && "text-amber-600 dark:text-amber-400")} />
                   <span className="flex-1 truncate">{item.label}</span>
+                  {item.id === "notifications" && unreadNotifications > 0 && (
+                    <span
+                      className={cn(
+                        "flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold",
+                        active
+                          ? "bg-primary-foreground text-primary"
+                          : "bg-italian-red text-white"
+                      )}
+                      title={`${unreadNotifications} notification${unreadNotifications > 1 ? "s" : ""} non lue${unreadNotifications > 1 ? "s" : ""}`}
+                    >
+                      {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                    </span>
+                  )}
                   {item.lot && !active && (
                     <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
                       {item.lot}
@@ -237,8 +255,14 @@ export function CandidateShell({ section, children }: CandidateShellProps) {
         </button>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Ouvrir le menu">
+            <Button variant="ghost" size="icon" aria-label="Ouvrir le menu" className="relative">
               <Menu className="h-5 w-5" />
+              {unreadNotifications > 0 && (
+                <span
+                  className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-italian-red"
+                  aria-hidden
+                />
+              )}
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-[280px] p-0">

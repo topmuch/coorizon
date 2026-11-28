@@ -45,6 +45,8 @@ export interface PlatformSettings {
   notifications: NotificationConfig;
   /** SMTP server used to deliver the notification emails. */
   smtp: SmtpConfig;
+  /** SEO metadata applied to the public site (title, description, keywords). */
+  seo: SeoConfig;
 }
 
 /**
@@ -91,11 +93,45 @@ export const DEFAULT_NOTIFICATIONS: NotificationConfig = {
   alertRecipient: "",
 };
 
+/**
+ * SEO configuration edited from the SuperAdmin settings.
+ * Applied client-side on the public site (document.title, meta description,
+ * meta keywords, Open Graph tags). Empty fields fall back to these defaults.
+ */
+export interface SeoConfig {
+  /** Browser tab title / <title> of the site. */
+  metaTitle: string;
+  /** Meta description (search result snippet). */
+  metaDescription: string;
+  /** Comma-separated list of keywords. */
+  metaKeywords: string;
+  /** Open Graph title (social networks). Empty → metaTitle. */
+  ogTitle: string;
+  /** Open Graph description (social networks). Empty → metaDescription. */
+  ogDescription: string;
+  /** Allow search engine indexing (false → robots noindex,nofollow). */
+  indexable: boolean;
+}
+
+export const DEFAULT_SEO: SeoConfig = {
+  metaTitle:
+    "COORIZON — Recrutement international, formation en italien & accompagnement",
+  metaDescription:
+    "COORIZON vous accompagne dans votre projet professionnel en Italie : formation linguistique en italien, recrutement international et accompagnement personnalisé. Candidats, entreprises et partenaires d'Afrique de l'Ouest.",
+  metaKeywords:
+    "COORIZON, recrutement international, travail en Italie, formation italien, immigration Italie, emploi Italie, Sénégal, Afrique de l'Ouest",
+  ogTitle: "COORIZON — Votre avenir professionnel commence ici",
+  ogDescription:
+    "Recrutement international, formation en italien et accompagnement à l'immigration vers l'Italie.",
+  indexable: true,
+};
+
 const DEFAULTS: PlatformSettings = {
   disabledRoles: [],
   forfait: DEFAULT_FORFAIT,
   notifications: DEFAULT_NOTIFICATIONS,
   smtp: { ...DEFAULT_SMTP },
+  seo: { ...DEFAULT_SEO },
 };
 
 function sanitize(raw: unknown): PlatformSettings {
@@ -103,6 +139,7 @@ function sanitize(raw: unknown): PlatformSettings {
     ...DEFAULTS,
     forfait: { ...DEFAULT_FORFAIT },
     notifications: { ...DEFAULT_NOTIFICATIONS },
+    seo: { ...DEFAULT_SEO },
   };
   if (!raw || typeof raw !== "object") return base;
   const obj = raw as Partial<PlatformSettings>;
@@ -162,6 +199,20 @@ function sanitize(raw: unknown): PlatformSettings {
       fromEmail: str(s.fromEmail, DEFAULT_SMTP.fromEmail),
     };
   }
+  if (obj.seo && typeof obj.seo === "object") {
+    const s = obj.seo as Partial<SeoConfig>;
+    const str = (v: unknown, fallback: string) =>
+      typeof v === "string" && v.trim() ? v.trim() : fallback;
+    base.seo = {
+      metaTitle: str(s.metaTitle, DEFAULT_SEO.metaTitle),
+      metaDescription: str(s.metaDescription, DEFAULT_SEO.metaDescription),
+      metaKeywords:
+        typeof s.metaKeywords === "string" ? s.metaKeywords.trim() : DEFAULT_SEO.metaKeywords,
+      ogTitle: typeof s.ogTitle === "string" ? s.ogTitle.trim() : "",
+      ogDescription: typeof s.ogDescription === "string" ? s.ogDescription.trim() : "",
+      indexable: typeof s.indexable === "boolean" ? s.indexable : DEFAULT_SEO.indexable,
+    };
+  }
   return base;
 }
 
@@ -179,6 +230,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     forfait: { ...DEFAULT_FORFAIT },
     notifications: { ...DEFAULT_NOTIFICATIONS },
     smtp: { ...DEFAULT_SMTP },
+    seo: { ...DEFAULT_SEO },
   };
 }
 
@@ -189,6 +241,7 @@ export async function updatePlatformSettings(patch: Partial<PlatformSettings>): 
     forfait: { ...current.forfait, ...(patch.forfait ?? {}) },
     notifications: { ...current.notifications, ...(patch.notifications ?? {}) },
     smtp: { ...current.smtp, ...(patch.smtp ?? {}) },
+    seo: { ...current.seo, ...(patch.seo ?? {}) },
   });
   const content = JSON.stringify(next);
   const existing = await db.cMSPage.findUnique({ where: { slug: SETTINGS_SLUG } });

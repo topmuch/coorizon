@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { SiteRouterProvider, useSiteRouter } from "@/lib/site-router";
+import { useSession } from "@/lib/auth/session-provider";
 import { SiteHeader } from "./header";
 import { SiteFooter } from "./footer";
 import { HomePage } from "./pages/home";
@@ -25,11 +26,19 @@ import { FaqPage } from "./pages/faq";
 import { ContactPage } from "./pages/contact";
 import { DashboardPage } from "./pages/dashboard";
 import { PlusCoorizonPage } from "./pages/plus-coorizon";
+import {
+  MentionsLegalesPage,
+  PolitiqueConfidentialitePage,
+  ConditionsGeneralesPage,
+  CookiesPage,
+} from "./pages/legal";
 import { AiAssistantWidget } from "./ai-assistant-widget";
 import { WhatsAppWidget } from "./whatsapp-widget";
+import type { SeoConfig } from "@/lib/platform-settings";
 
 function PageRenderer() {
   const { route } = useSiteRouter();
+  const { user } = useSession();
 
   const page = React.useMemo(() => {
     switch (route) {
@@ -67,6 +76,14 @@ function PageRenderer() {
         return <RegisterCandidatePage />;
       case "register-recruiter":
         return <RegisterRecruiterPage />;
+      case "mentions-legales":
+        return <MentionsLegalesPage />;
+      case "politique-confidentialite":
+        return <PolitiqueConfidentialitePage />;
+      case "conditions-generales":
+        return <ConditionsGeneralesPage />;
+      case "cookies":
+        return <CookiesPage />;
       case "plus-coorizon":
         return <PlusCoorizonPage />;
       case "dashboard":
@@ -82,12 +99,17 @@ function PageRenderer() {
   const isLogin = route === "login" || route.startsWith("login-");
   const isImmersive = isDashboard || isLogin;
 
+  // The floating AI assistant is available on the dashboards, except for
+  // candidates (removed on request — the candidate space stays focused).
+  const showAiAssistant = isDashboard && user?.role !== "Candidate";
+
   return (
     <div className="flex min-h-screen flex-col">
+      <SeoMetadata />
       {!isImmersive && <SiteHeader />}
       <main className="flex-1">{page}</main>
       {!isImmersive && <SiteFooter />}
-      {isDashboard && <AiAssistantWidget />}
+      {showAiAssistant && <AiAssistantWidget />}
       {!isImmersive && <WhatsAppWidget />}
     </div>
   );
@@ -103,4 +125,55 @@ export function SiteApp() {
       </SiteRouterProvider>
     </React.Suspense>
   );
+}
+
+// ─── SEO metadata applier ──────────────────────────────────────────────────
+
+/** Set (or create) a <meta> tag in the document head. */
+function upsertMeta(attr: "name" | "property", key: string, content: string): void {
+  if (typeof document === "undefined") return;
+  let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+}
+
+/**
+ * SeoMetadata — fetches the SEO configuration managed from the SuperAdmin
+ * settings (GET /api/settings/seo, public) and applies it to the document:
+ * <title>, meta description, meta keywords, Open Graph tags and robots.
+ * Values fall back to the SSR defaults defined in layout.tsx.
+ */
+function SeoMetadata() {
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/settings/seo", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { seo?: SeoConfig };
+        const seo = data.seo;
+        if (cancelled || !seo) return;
+
+        if (seo.metaTitle) document.title = seo.metaTitle;
+        if (seo.metaDescription) upsertMeta("name", "description", seo.metaDescription);
+        if (seo.metaKeywords) upsertMeta("name", "keywords", seo.metaKeywords);
+        const ogTitle = seo.ogTitle || seo.metaTitle;
+        const ogDescription = seo.ogDescription || seo.metaDescription;
+        if (ogTitle) upsertMeta("property", "og:title", ogTitle);
+        if (ogDescription) upsertMeta("property", "og:description", ogDescription);
+        upsertMeta("name", "robots", seo.indexable ? "index, follow" : "noindex, nofollow");
+      } catch {
+        // Metadata stays at the SSR defaults on failure.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return null;
 }

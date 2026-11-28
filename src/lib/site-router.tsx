@@ -21,6 +21,10 @@ export type SiteRoute =
   | "login-admin"
   | "register-candidate"
   | "register-recruiter"
+  | "mentions-legales"
+  | "politique-confidentialite"
+  | "conditions-generales"
+  | "cookies"
   | "plus-coorizon"
   | "dashboard";
 
@@ -50,6 +54,10 @@ const ALLOWED_ROUTES: SiteRoute[] = [
   "login-admin",
   "register-candidate",
   "register-recruiter",
+  "mentions-legales",
+  "politique-confidentialite",
+  "conditions-generales",
+  "cookies",
   "plus-coorizon",
   "dashboard",
 ];

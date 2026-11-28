@@ -8,10 +8,11 @@ import { requireSession, authErrorResponse } from "@/lib/auth/session";
  * GET /api/notifications
  *   List the authenticated user's notifications, newest first.
  *   Query params:
+ *     - countOnly ("true" → return only { unreadCount }, lightweight poll)
  *     - unread   ("true" → filter isRead=false)
  *     - page     (1-based, default 1)
  *     - pageSize (default 50)
- *   Returns { notifications, unreadCount, total }.
+ *   Returns { notifications, unreadCount, total } (or { unreadCount } when countOnly).
  *
  * PUT /api/notifications
  *   Mark notifications as read.
@@ -46,6 +47,15 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id;
 
     const url = new URL(req.url);
+
+    // Lightweight mode used by the dashboard shells: only the unread counter.
+    if (url.searchParams.get("countOnly") === "true") {
+      const unreadOnly = await db.notification.count({
+        where: { userId, isRead: false },
+      });
+      return Response.json({ unreadCount: unreadOnly });
+    }
+
     const unread = url.searchParams.get("unread") === "true";
     const page = parsePositiveInt(url.searchParams.get("page"), 1);
     const pageSize = Math.min(

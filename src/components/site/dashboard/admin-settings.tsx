@@ -21,6 +21,7 @@ import {
   MessageCircle,
   Mail,
   Send,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -47,6 +48,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -181,6 +183,10 @@ export function AdminSettings() {
           <TabsTrigger value="emails" className="gap-1.5">
             <Mail className="h-3.5 w-3.5" />
             Communications
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="gap-1.5">
+            <Search className="h-3.5 w-3.5" />
+            SEO
           </TabsTrigger>
           <TabsTrigger value="system" className="gap-1.5">
             <Server className="h-3.5 w-3.5" />
@@ -359,6 +365,11 @@ export function AdminSettings() {
 
       {/* WhatsApp floating button numbers */}
       <WhatsAppSettingsCard />
+        </TabsContent>
+
+        {/* SEO: référencement & mots-clés */}
+        <TabsContent value="seo" className="mt-2 space-y-6">
+      <SeoSettingsCard />
         </TabsContent>
 
         {/* System: general settings, security, about */}
@@ -882,6 +893,286 @@ function NotificationSwitch({
       </div>
       <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={label} />
     </li>
+  );
+}
+
+// ─── SEO & référencement settings card ─────────────────────────────────────
+
+interface SeoFormState {
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  ogTitle: string;
+  ogDescription: string;
+  indexable: boolean;
+}
+
+/**
+ * SEO & keywords configuration (SuperAdmin settings).
+ * The saved values are applied on the public site: document title,
+ * meta description, meta keywords, Open Graph tags and robots directives
+ * (noindex when indexing is disabled).
+ */
+function SeoSettingsCard() {
+  const { toast } = useToast();
+  const [form, setForm] = React.useState<SeoFormState>({
+    metaTitle: "",
+    metaDescription: "",
+    metaKeywords: "",
+    ogTitle: "",
+    ogDescription: "",
+    indexable: true,
+  });
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+
+  const fetchSeo = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/settings/seo", { credentials: "include" });
+      if (!res.ok) throw new Error("Échec du chargement des paramètres SEO.");
+      const data = (await res.json()) as { seo: SeoFormState };
+      setForm(data.seo);
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  React.useEffect(() => {
+    void fetchSeo();
+  }, [fetchSeo]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/seo", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(form),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        seo?: SeoFormState;
+        error?: string;
+      };
+      if (!res.ok || !data.seo) throw new Error(data.error || "Échec de la sauvegarde.");
+      setForm(data.seo);
+      toast({
+        title: "Paramètres SEO enregistrés",
+        description:
+          "Les métadonnées sont appliquées au site public (titre, description, mots-clés, réseaux sociaux).",
+      });
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const keywords = form.metaKeywords
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  const titleLen = form.metaTitle.length;
+  const descLen = form.metaDescription.length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-navy">
+          <Search className="h-5 w-5 text-brand" />
+          SEO &amp; mots-clés
+        </CardTitle>
+        <CardDescription>
+          Métadonnées de référencement appliquées au site public : titre de
+          l&apos;onglet, description pour les moteurs de recherche, mots-clés
+          et aperçu sur les réseaux sociaux.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Meta title */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="seo-title">Titre du site (meta title)</Label>
+                <span
+                  className={cn(
+                    "text-xs",
+                    titleLen > 60 ? "font-medium text-amber-600" : "text-muted-foreground"
+                  )}
+                >
+                  {titleLen}/60
+                </span>
+              </div>
+              <Input
+                id="seo-title"
+                placeholder="COORIZON — Recrutement international, formation en italien…"
+                value={form.metaTitle}
+                onChange={(e) => setForm({ ...form, metaTitle: e.target.value })}
+                className="h-9"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Recommandé : 50–60 caractères. C&apos;est le titre de l&apos;onglet et le
+                premier lien affiché dans Google.
+              </p>
+            </div>
+
+            {/* Meta description */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="seo-description">Description du site (meta description)</Label>
+                <span
+                  className={cn(
+                    "text-xs",
+                    descLen > 160 ? "font-medium text-amber-600" : "text-muted-foreground"
+                  )}
+                >
+                  {descLen}/160
+                </span>
+              </div>
+              <Textarea
+                id="seo-description"
+                rows={3}
+                placeholder="COORIZON vous accompagne dans votre projet professionnel en Italie…"
+                value={form.metaDescription}
+                onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Recommandé : 120–160 caractères. Texte affiché sous le titre dans les
+                résultats de recherche.
+              </p>
+            </div>
+
+            {/* Keywords */}
+            <div className="space-y-1.5">
+              <Label htmlFor="seo-keywords">Mots-clés (séparés par des virgules)</Label>
+              <Textarea
+                id="seo-keywords"
+                rows={2}
+                placeholder="COORIZON, recrutement international, travail en Italie, formation italien…"
+                value={form.metaKeywords}
+                onChange={(e) => setForm({ ...form, metaKeywords: e.target.value })}
+              />
+              {keywords.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {keywords.map((k) => (
+                    <Badge
+                      key={k}
+                      variant="outline"
+                      className="border-brand/30 text-[10px] font-normal text-brand"
+                    >
+                      {k}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Ex. : « emploi Italie, travail Italie Sénégal, formation italien Dakar ».
+              </p>
+            </div>
+
+            <Separator />
+
+            {/* Open Graph */}
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-navy">
+                  Partage sur les réseaux sociaux (Open Graph)
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Laissez vide pour réutiliser le titre et la description ci-dessus.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="seo-og-title" className="text-xs">
+                    Titre de partage
+                  </Label>
+                  <Input
+                    id="seo-og-title"
+                    placeholder="COORIZON — Votre avenir professionnel commence ici"
+                    value={form.ogTitle}
+                    onChange={(e) => setForm({ ...form, ogTitle: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="seo-og-description" className="text-xs">
+                    Description de partage
+                  </Label>
+                  <Input
+                    id="seo-og-description"
+                    placeholder="Recrutement international, formation en italien…"
+                    value={form.ogDescription}
+                    onChange={(e) => setForm({ ...form, ogDescription: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Indexation */}
+            <ul className="space-y-2">
+              <NotificationSwitch
+                label="Autoriser l'indexation par les moteurs de recherche"
+                description="Désactivé, le site indique « noindex, nofollow » aux robots (invisible temporairement dans Google)."
+                checked={form.indexable}
+                onCheckedChange={(v) => setForm({ ...form, indexable: v })}
+              />
+            </ul>
+
+            {/* Google snippet preview */}
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-foreground">
+                Aperçu dans les résultats de recherche
+              </p>
+              <div className="rounded-lg border border-border bg-white p-4 dark:bg-card">
+                <p className="text-xs text-muted-foreground">coorizon.com</p>
+                <p className="mt-0.5 truncate text-lg text-[#1a0dab] dark:text-sky-400">
+                  {form.metaTitle || "Titre du site"}
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-sm text-[#4d5156] dark:text-muted-foreground">
+                  {form.metaDescription || "Description du site affichée dans les résultats de recherche…"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={() => void handleSave()} disabled={saving} className="bg-brand hover:bg-brand/90">
+                {saving ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                )}
+                Enregistrer les paramètres SEO
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Appliqué immédiatement au site public.
+              </span>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

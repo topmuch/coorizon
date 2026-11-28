@@ -11,7 +11,6 @@ interface FooterLink {
 }
 
 const candidateLinks: FooterLink[] = [
-  { label: "Nos offres d'emploi", route: "jobs" },
   { label: "Formation en italien", route: "training" },
   { label: "Travailler en Italie", route: "work-in-italy" },
   { label: "Comment ça marche", route: "how-it-works" },
@@ -19,7 +18,7 @@ const candidateLinks: FooterLink[] = [
 ];
 
 const companyLinks: FooterLink[] = [
-  { label: "Inscription recruteur", route: "register-recruiter" },
+  { label: "Inscription entreprise", route: "register-recruiter" },
   { label: "À propos", route: "about" },
   { label: "FAQ", route: "faq" },
   { label: "Contact", route: "contact" },
@@ -116,10 +115,30 @@ export function SiteFooter() {
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-white md:flex-row">
           <p>© {new Date().getFullYear()} COORIZON. Tous droits réservés.</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <button className="text-white hover:text-white">Mentions légales</button>
-            <button className="text-white hover:text-white">Politique de confidentialité</button>
-            <button className="text-white hover:text-white">Conditions générales</button>
-            <button className="text-white hover:text-white">Cookies</button>
+            <button
+              onClick={() => navigate("mentions-legales")}
+              className="underline-offset-4 transition-colors hover:text-brand-green hover:underline"
+            >
+              Mentions légales
+            </button>
+            <button
+              onClick={() => navigate("politique-confidentialite")}
+              className="underline-offset-4 transition-colors hover:text-brand-green hover:underline"
+            >
+              Politique de confidentialité
+            </button>
+            <button
+              onClick={() => navigate("conditions-generales")}
+              className="underline-offset-4 transition-colors hover:text-brand-green hover:underline"
+            >
+              Conditions générales
+            </button>
+            <button
+              onClick={() => navigate("cookies")}
+              className="underline-offset-4 transition-colors hover:text-brand-green hover:underline"
+            >
+              Cookies
+            </button>
           </div>
         </div>
         <p className="mt-4 text-[11px] leading-relaxed text-white">

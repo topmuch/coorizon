@@ -225,7 +225,7 @@ export function PartnersPage() {
                 size="lg"
                 onClick={() => navigate("register-recruiter")}
               >
-                Créer un compte recruteur
+                Créer un compte entreprise
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
               <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-surface p-3">
