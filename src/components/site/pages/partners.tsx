@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/site/sections/page-header";
 import { SectionHeading, SectionShell } from "@/components/site/sections/section-heading";
+import { partnerLogos } from "@/components/site/sections/partenariat";
 import { useSiteRouter } from "@/lib/site-router";
 import { partners, sectors } from "@/lib/site-data";
 
@@ -106,6 +107,30 @@ export function PartnersPage() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Institutional partners strip */}
+      <div className="border-b border-border bg-surface">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Partenaires institutionnels
+          </p>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {partnerLogos.map((p) => (
+              <div
+                key={p.name}
+                className="flex items-center justify-center rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md"
+              >
+                <img
+                  src={p.logo}
+                  alt={`Logo ${p.name}`}
+                  title={p.name}
+                  className="max-h-14 w-auto max-w-full object-contain"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
