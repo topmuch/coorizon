@@ -183,7 +183,7 @@ function AiStatusCard() {
           <Sparkles className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
           <p className="text-muted-foreground">
             Génération de contenu (offres, emails, lettres) disponible pour les
-            recruteurs et administrateurs via{" "}
+            entreprises et administrateurs via{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-[11px]">/api/ai/suggestions</code>.
           </p>
         </div>

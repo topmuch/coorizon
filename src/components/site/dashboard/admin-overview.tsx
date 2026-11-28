@@ -105,7 +105,7 @@ const APPLICATION_STATUS_META: { key: string; label: string; color: string }[] =
 
 const ROLE_META: { key: string; label: string; color: string }[] = [
   { key: "Candidate", label: "Candidats", color: BRAND },
-  { key: "Recruiter", label: "Recruteurs", color: NAVY },
+  { key: "Recruiter", label: "Entreprises", color: NAVY },
   { key: "Trainer", label: "Formateurs", color: BRAND_GREEN },
   { key: "RecruitmentAgent", label: "Agents recrutement", color: "#7c3aed" },
   { key: "ImmigrationAgent", label: "Agents immigration", color: "#0891b2" },
@@ -462,7 +462,7 @@ export function AdminOverview() {
       onClick: () => navigate("dashboard", { section: "users" }),
     },
     {
-      label: "Recruteurs",
+      label: "Comptes entreprise",
       value: formatNumber(totals.recruiters),
       icon: Briefcase,
       tone: "amber",
@@ -612,7 +612,7 @@ export function AdminOverview() {
                 <AlertDescription>
                   <span className="text-muted-foreground">
                     Validez les offres d’emploi soumises par les
-                    recruteurs.
+                    entreprises.
                   </span>
                   <Button
                     size="sm"

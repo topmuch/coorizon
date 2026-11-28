@@ -32,7 +32,7 @@ const values = [
 
 const audiences = [
   { icon: Briefcase, title: "Candidats africains", desc: "Talents du Sénégal et d'Afrique de l'Ouest cherchant un emploi qualifié en Italie." },
-  { icon: Building2, title: "Entreprises italiennes", desc: "Recruteurs vérifiés cherchant des profils motivés et formés." },
+  { icon: Building2, title: "Entreprises italiennes", desc: "Entreprises vérifiées cherchant des profils motivés et formés." },
   { icon: Users, title: "Agences & partenaires", desc: "Structures locales qui identifient et préparent les candidats." },
   { icon: GraduationCap, title: "Formateurs en italien", desc: "Enseignants qui conçoivent et animent les parcours linguistiques." },
   { icon: Plane, title: "Agents de suivi", desc: "Accompagnateurs qui gèrent les dossiers administratifs et le suivi." },

@@ -12,7 +12,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await requireSession();
     if (session.user.role !== "Recruiter") {
-      return Response.json({ error: "Réservé aux recruteurs." }, { status: 403 });
+      return Response.json({ error: "Réservé aux entreprises." }, { status: 403 });
     }
 
     const body = await req.json().catch(() => null);

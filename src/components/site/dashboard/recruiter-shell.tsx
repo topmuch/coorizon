@@ -153,7 +153,7 @@ export function RecruiterShell({ section, children }: RecruiterShellProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-[280px] p-0">
-            <SheetTitle className="sr-only">Menu recruteur</SheetTitle>
+            <SheetTitle className="sr-only">Menu entreprise</SheetTitle>
             <div className="flex h-16 items-center border-b px-5">
               <Logo size="sm" />
             </div>
@@ -165,7 +165,7 @@ export function RecruiterShell({ section, children }: RecruiterShellProps) {
       <div className="lg:pl-64">
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Espace recruteur</span>
+            <span>Espace entreprise</span>
             <span>/</span>
             <span className="font-medium text-navy">{activeItem?.label}</span>
           </div>
@@ -199,7 +199,7 @@ export function RecruiterPendingScreen() {
         <h1 className="mt-6 text-2xl font-bold text-navy">Compte en attente de validation</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           Bonjour {user?.firstName ?? ""}, votre compte entreprise est en cours d'examen par
-          l'administration COORIZON. Conformément à nos règles, chaque compte recruteur est validé
+          l'administration COORIZON. Conformément à nos règles, chaque compte entreprise est validé
           avant de pouvoir publier des offres.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">

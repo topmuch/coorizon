@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     // Authorization: recruiters and admins only.
     if (!ALLOWED_ROLES.has(session.user.role) && !isAdmin(session.user.role)) {
       return Response.json(
-        { error: "Réservé aux recruteurs et administrateurs." },
+        { error: "Réservé aux entreprises et administrateurs." },
         { status: 403 }
       );
     }

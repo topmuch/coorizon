@@ -79,7 +79,7 @@ export function RecruiterSettings() {
             <Building2 className="h-5 w-5 text-brand" />
             Informations du compte
           </CardTitle>
-          <CardDescription>Vos informations de recruteur.</CardDescription>
+          <CardDescription>Vos informations d'entreprise.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="flex items-center justify-between">
@@ -94,7 +94,7 @@ export function RecruiterSettings() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Rôle</span>
-            <span className="font-medium text-navy">Recruteur</span>
+            <span className="font-medium text-navy">Entreprise</span>
           </div>
         </CardContent>
       </Card>

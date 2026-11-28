@@ -65,13 +65,13 @@ const SECTORS = [
 ];
 
 const EDUCATION_LEVELS = [
-  "Sans diplôme",
-  "CAP/BEP",
-  "Bac",
-  "Bac+2",
-  "Bac+3",
-  "Bac+5",
-  "Autre",
+  "Élémentaire (CI → CM2, diplôme CFEE)",
+  "Moyen / Collège (6e → 3e, diplôme BFEM)",
+  "Secondaire / Lycée (Seconde → Terminale, diplôme Bac)",
+  "Formation professionnelle (CAP, BEP, BT)",
+  "Supérieur – Licence (Bac+3)",
+  "Supérieur – Master (Bac+5)",
+  "Supérieur – Doctorat (Bac+8)",
 ];
 
 const ITALIAN_LEVELS = ["Aucun", "A1", "A2", "B1", "B2", "C1", "C2"];
@@ -302,7 +302,7 @@ export function CandidateProfile() {
         <h1 className="text-2xl font-bold text-navy">Mon profil candidat</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Renseignez vos informations pour maximiser vos chances auprès des
-          recruteurs italiens.
+          entreprises italiennes.
         </p>
       </div>
 
@@ -315,7 +315,7 @@ export function CandidateProfile() {
             </p>
             <p className="text-xs text-muted-foreground">
               {completionPct}% complété — plus votre profil est complet, plus
-              il est visible par les recruteurs.
+              il est visible par les entreprises.
             </p>
           </div>
           <div className="flex w-full items-center gap-3 sm:w-72">
@@ -498,12 +498,25 @@ export function CandidateProfile() {
                   <SelectTrigger id="educationLevel" className="w-full">
                     <SelectValue placeholder="Sélectionner…" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-w-[calc(100vw-2rem)]">
                     {EDUCATION_LEVELS.map((l) => (
-                      <SelectItem key={l} value={l}>
+                      <SelectItem
+                        key={l}
+                        value={l}
+                        className="whitespace-normal text-left"
+                      >
                         {l}
                       </SelectItem>
                     ))}
+                    {form.educationLevel &&
+                      !EDUCATION_LEVELS.includes(form.educationLevel) && (
+                        <SelectItem
+                          value={form.educationLevel}
+                          className="whitespace-normal text-left"
+                        >
+                          {form.educationLevel} (ancienne valeur)
+                        </SelectItem>
+                      )}
                   </SelectContent>
                 </Select>
               </Field>

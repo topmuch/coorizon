@@ -75,7 +75,7 @@ const mainServices: MainService[] = [
       {
         name: "Préparation aux entretiens",
         description:
-          "Simulations d'entretiens, questions fréquentes et conseils pour convaincre les recruteurs italiens.",
+          "Simulations d'entretiens, questions fréquentes et conseils pour convaincre les entreprises italiennes.",
       },
       {
         name: "Techniques de recherche",

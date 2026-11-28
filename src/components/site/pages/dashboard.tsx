@@ -216,7 +216,7 @@ export function DashboardPage() {
           <div className="max-w-md text-center">
             <h1 className="text-2xl font-bold text-navy">Compte indisponible</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Votre compte recruteur est actuellement {user.status === "Suspended" ? "suspendu" : "désactivé"}.
+              Votre compte entreprise est actuellement {user.status === "Suspended" ? "suspendu" : "désactivé"}.
               Contactez l'administration COORIZON.
             </p>
           </div>

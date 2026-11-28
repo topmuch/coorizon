@@ -56,7 +56,7 @@ async function main() {
   await ensureUser("candidate@coorizon.com", "Candidate2024!", "Candidate", "Active", "Awa", "Candidat");
 
   // ── Demo Pending Recruiter ──────────────────────────────────
-  await ensureUser("recruiter@coorizon.com", "Recruiter2024!", "Recruiter", "Pending", "Marco", "Recruteur");
+  await ensureUser("recruiter@coorizon.com", "Recruiter2024!", "Recruiter", "Pending", "Marco", "Bianchi");
 
   // ── Validated Company + Recruiter ───────────────────────────
   let company = await db.company.findFirst({ where: { legalName: "Ristorante Bella Toscana S.r.l." } });
@@ -207,7 +207,7 @@ async function main() {
       { name: "Formation Italien A2", description: "Parcours A2.", category: "formation", price: 59, currency: "EUR", durationLabel: "3 mois" },
       { name: "Formation Italien B1", description: "Italien professionnel.", category: "formation", price: 79, currency: "EUR", durationLabel: "4 mois" },
       { name: "Pack Accompagnement Immigration", description: "Accompagnement complet.", category: "accompagnement", price: 199, currency: "EUR", durationLabel: "Until departure" },
-      { name: "Abonnement Recruteur Premium", description: "Offres illimitées.", category: "abonnement", price: 99, currency: "EUR", durationLabel: "1 mois" },
+      { name: "Abonnement Entreprise Premium", description: "Offres illimitées.", category: "abonnement", price: 99, currency: "EUR", durationLabel: "1 mois" },
       { name: "Session Coaching Entretien", description: "1h coaching individuel.", category: "accompagnement", price: 39, currency: "EUR", durationLabel: "1 session" },
     ];
     for (const s of services) await db.service.create({ data: s });

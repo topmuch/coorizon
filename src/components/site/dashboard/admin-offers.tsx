@@ -452,7 +452,7 @@ export function AdminOffers() {
         <p className="mt-1 text-sm text-muted-foreground">
           Validez et publiez les offres soumises par les entreprises, suspendez
           ou clôturez les offres actives. L'édition du contenu reste du
-          ressort du recruteur.
+          ressort de l'entreprise.
         </p>
       </header>
 
@@ -500,7 +500,7 @@ export function AdminOffers() {
               Aucune offre dans cette catégorie
             </h3>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Les offres soumises par les recruteurs pour validation
+              Les offres soumises par les entreprises pour validation
               apparaîtront ici.
             </p>
           </CardContent>
@@ -684,7 +684,7 @@ export function AdminOffers() {
                 <>
                   L'offre « <strong>{closeOffer.title}</strong> » sera
                   clôturée et n'acceptera plus de nouvelles candidatures. Les
-                  candidatures en cours restent accessibles au recruteur.
+                  candidatures en cours restent accessibles à l'entreprise.
                 </>
               )}
             </AlertDialogDescription>
@@ -825,7 +825,7 @@ export function AdminOffers() {
               Ajouter une offre
             </DialogTitle>
             <DialogDescription>
-              Les offres sont créées par les recruteurs depuis leur espace.
+              Les offres sont créées par les entreprises depuis leur espace.
               En tant qu'administrateur, vous pouvez valider et publier les
               offres soumises.
             </DialogDescription>
@@ -834,7 +834,7 @@ export function AdminOffers() {
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>
               Le contenu d'une offre (titre, description, missions,
-              qualifications…) relève de la responsabilité du recruteur.
+              qualifications…) relève de la responsabilité de l'entreprise.
               Une fois soumise, l'offre passe en attente de validation et
               apparaît dans l'onglet « En attente » de cette interface.
               Vous pourrez alors la publier, la rejeter ou la suspendre.

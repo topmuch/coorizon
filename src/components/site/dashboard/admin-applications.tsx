@@ -825,7 +825,7 @@ function ApplicationDetailContent({
         <section className="space-y-2">
           <h4 className="flex items-center gap-2 text-sm font-semibold text-navy">
             <MessageSquare className="h-4 w-4 text-amber-600" />
-            Note du recruteur
+            Note de l'entreprise
           </h4>
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 whitespace-pre-wrap">
             {application.recruiterNote}

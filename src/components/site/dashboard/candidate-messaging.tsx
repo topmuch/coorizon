@@ -41,7 +41,7 @@ interface Message {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  Candidate: "Candidat", Recruiter: "Recruteur", Trainer: "Formateur",
+  Candidate: "Candidat", Recruiter: "Entreprise", Trainer: "Formateur",
   RecruitmentAgent: "Agent recrutement", ImmigrationAgent: "Agent immigration",
   Admin: "Admin", SuperAdmin: "Super Admin",
 };

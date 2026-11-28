@@ -30,7 +30,7 @@ const partnerStats: PartnerStat[] = [
   { value: "180+", label: "Entreprises partenaires", icon: Building2 },
   { value: "610+", label: "Offres d'emploi actives", icon: Briefcase },
   { value: "8", label: "Secteurs représentés", icon: TrendingUp },
-  { value: "94%", label: "Satisfaction recruteurs", icon: CheckCircle2 },
+  { value: "94%", label: "Satisfaction entreprises", icon: CheckCircle2 },
 ];
 
 interface PartnerBenefit {
@@ -186,7 +186,7 @@ export function PartnersPage() {
           <div>
             <SectionHeading
               align="left"
-              eyebrow="Recruteurs"
+              eyebrow="Entreprises"
               title="Devenir entreprise partenaire"
               description="Rejoignez le réseau d'entreprises italiennes qui recrutent des talents formés et accompagnés par COORIZON."
               className="max-w-xl"
@@ -231,7 +231,7 @@ export function PartnersPage() {
               <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-surface p-3">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-green" />
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Chaque compte recruteur est validé par l'administration COORIZON avant de pouvoir
+                  Chaque compte entreprise est validé par l'administration COORIZON avant de pouvoir
                   publier des offres. Les délais de validation sont généralement de 24 à 48 heures
                   ouvrées.
                 </p>

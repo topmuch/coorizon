@@ -1211,7 +1211,7 @@ export function AdminUsers() {
                 <section className="rounded-lg border border-border p-4">
                   <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
                     <Building2 className="size-4 text-brand" />
-                    Profil recruteur
+                    Profil entreprise
                   </h4>
                   <div className="grid gap-2 text-sm sm:grid-cols-2">
                     <Field
@@ -1298,7 +1298,7 @@ export function AdminUsers() {
                     />
                     <StatTile
                       icon={Users}
-                      label="Entretiens (recruteur)"
+                      label="Entretiens (entreprise)"
                       value={detailCounts.interviewsAsRecruiter ?? 0}
                     />
                     <StatTile

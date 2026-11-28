@@ -33,7 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const subjects = [
   "Je suis candidat",
-  "Je suis recruteur",
+  "Je suis une entreprise",
   "Partenariat",
   "Formation",
   "Support technique",
@@ -152,7 +152,7 @@ export function ContactPage() {
                   <div className="text-sm font-semibold text-navy">Réponse sous 24h ouvrées</div>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     Nous traitons toutes les demandes dans l'ordre d'arrivée. Pour un suivi optimal,
-                    indiquez votre profil (candidat, recruteur, partenaire) dans votre message.
+                    indiquez votre profil (candidat, entreprise, partenaire) dans votre message.
                   </p>
                 </div>
               </CardContent>
@@ -172,7 +172,7 @@ export function ContactPage() {
                   />
                   <QuickLink
                     icon={Building2}
-                    label="Espace recruteur"
+                    label="Espace entreprise"
                     onClick={() => navigate("register-recruiter")}
                   />
                   <QuickLink

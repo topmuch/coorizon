@@ -817,7 +817,7 @@ export function RecruiterCompany() {
             Responsables
           </CardTitle>
           <CardDescription>
-            Les recruteurs rattachés à votre entreprise.
+            Les responsables rattachés à votre entreprise.
           </CardDescription>
         </CardHeader>
         <CardContent>

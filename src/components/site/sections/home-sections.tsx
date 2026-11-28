@@ -448,7 +448,7 @@ export function FinalCtaSection() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <CtaFeature icon={Users} title="Accompagnement humain" desc="Un agent dédié pour votre dossier." />
             <CtaFeature icon={GraduationCap} title="Formation incluse" desc="Italien A1 à C2, examens & attestations." />
-            <CtaFeature icon={ShieldCheck} title="Entreprises vérifiées" desc="Chaque recruteur est validé." />
+            <CtaFeature icon={ShieldCheck} title="Entreprises vérifiées" desc="Chaque entreprise est validée." />
             <CtaFeature icon={Plane} title="Suivi complet" desc="Du profil au départ en Italie." />
           </div>
         </div>

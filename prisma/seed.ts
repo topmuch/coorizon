@@ -49,7 +49,7 @@ async function main() {
   // Create a few demo accounts for testing the other roles (dev only).
   if (process.env.NODE_ENV !== "production") {
     await ensureDemo("candidate@coorizon.com", "Candidate2024!", ROLES.Candidate, "Awa", "Candidat");
-    await ensureDemo("recruiter@coorizon.com", "Recruiter2024!", ROLES.Recruiter, "Marco", "Recruteur", "Pending");
+    await ensureDemo("recruiter@coorizon.com", "Recruiter2024!", ROLES.Recruiter, "Marco", "Bianchi", "Pending");
     console.log("✓ Demo accounts ready (candidate@coorizon.com / recruiter@coorizon.com).");
   }
 
@@ -593,7 +593,7 @@ async function seedServices() {
     { name: "Formation Italien A2 — Élémentaire", description: "Parcours A2 complet : vie pratique, vocabulaire professionnel de base.", category: "formation", price: 59, currency: "EUR", durationLabel: "3 mois" },
     { name: "Formation Italien B1 — Intermédiaire", description: "Maîtrisez l'italien professionnel : entretiens, contrats, communication en entreprise.", category: "formation", price: 79, currency: "EUR", durationLabel: "4 mois" },
     { name: "Pack Accompagnement Immigration", description: "Accompagnement complet : préparation dossier, suivi visa, préparation au départ.", category: "accompagnement", price: 199, currency: "EUR", durationLabel: "Until departure" },
-    { name: "Abonnement Recruteur — Premium", description: "Publications d'offres illimitées, accès CVthèque, candidatures illimitées.", category: "abonnement", price: 99, currency: "EUR", durationLabel: "1 mois" },
+    { name: "Abonnement Entreprise — Premium", description: "Publications d'offres illimitées, accès CVthèque, candidatures illimitées.", category: "abonnement", price: 99, currency: "EUR", durationLabel: "1 mois" },
     { name: "Session Coaching Entretien", description: "1h de coaching individuel pour préparer vos entretiens en italien.", category: "accompagnement", price: 39, currency: "EUR", durationLabel: "1 session" },
   ];
 

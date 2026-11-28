@@ -652,7 +652,7 @@ export function AdminCompanies() {
                     <TableHead>Secteur</TableHead>
                     <TableHead>Ville / Région</TableHead>
                     <TableHead>Statut</TableHead>
-                    <TableHead className="text-center">Recruteurs</TableHead>
+                    <TableHead className="text-center">Comptes</TableHead>
                     <TableHead className="text-center">Offres</TableHead>
                     <TableHead>Inscrite le</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -722,7 +722,7 @@ export function AdminCompanies() {
               {detailCompany?.company.legalName ?? "Chargement…"}
             </DialogTitle>
             <DialogDescription>
-              Détails de l'entreprise, documents et recruteurs associés.
+              Détails de l'entreprise, documents et comptes associés.
             </DialogDescription>
           </DialogHeader>
 
@@ -758,7 +758,7 @@ export function AdminCompanies() {
               {rejectCompany && (
                 <>
                   Indiquez la raison du rejet de «{" "}
-                  <strong>{rejectCompany.legalName}</strong> ». Le recruteur
+                  <strong>{rejectCompany.legalName}</strong> ». Le responsable
                   principal en sera informé.
                 </>
               )}
@@ -829,7 +829,7 @@ export function AdminCompanies() {
               {suspendCompany && (
                 <>
                   « <strong>{suspendCompany.legalName}</strong> » sera
-                  suspendue. Tous ses recruteurs seront automatiquement
+                  suspendue. Tous ses comptes seront automatiquement
                   suspendus et ne pourront plus se connecter. L'action est
                   réversible (réactivation possible).
                 </>
@@ -879,7 +879,7 @@ export function AdminCompanies() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Toutes les données liées seront supprimées : offres d'emploi,
-              candidatures, entretiens, documents et profils recruteurs.
+              candidatures, entretiens, documents et comptes rattachés.
               Action définitive.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -928,8 +928,8 @@ export function AdminCompanies() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Cette action supprime TOUTES les entreprises ainsi que leurs
-              offres, candidatures, entretiens, documents et profils
-              recruteurs. Cette action est irréversible.
+              offres, candidatures, entretiens, documents et comptes
+              rattachés. Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -967,14 +967,14 @@ export function AdminCompanies() {
               Ajouter une entreprise
             </DialogTitle>
             <DialogDescription>
-              Les entreprises sont créées via le flux d'inscription recruteur.
+              Les entreprises sont créées via le flux d'inscription entreprise.
               Un administrateur valide ensuite le compte.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>
-              Pour créer une nouvelle entreprise, un recruteur doit s'inscrire
+              Pour créer une nouvelle entreprise, un responsable doit s'inscrire
               sur la plateforme en renseignant les informations légales de
               sa société et en téléversant les documents justificatifs.
               Une fois l'inscription effectuée, l'entreprise apparaîtra dans
@@ -996,7 +996,7 @@ export function AdminCompanies() {
                 navigate("register-recruiter");
               }}
             >
-              Inscrire un recruteur
+              Inscrire une entreprise
               <ArrowRight className="h-4 w-4" />
             </Button>
           </DialogFooter>
@@ -1244,7 +1244,7 @@ function CompanyCardMobile(props: CompanyActionsProps) {
           )}
           <span className="flex items-center gap-1">
             <Users className="h-3 w-3" />
-            {recruiterCount} recruteur{recruiterCount > 1 ? "s" : ""}
+            {recruiterCount} compte{recruiterCount > 1 ? "s" : ""}
           </span>
           <span className="flex items-center gap-1">
             <Briefcase className="h-3 w-3" />
@@ -1299,7 +1299,7 @@ function CompanyDetailBody({ detail }: { detail: CompanyDetailResponse }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <DetailStat
           icon={Users}
-          label="Recruteurs"
+          label="Comptes"
           value={String(company.recruiters?.length ?? 0)}
         />
         <DetailStat
@@ -1373,7 +1373,7 @@ function CompanyDetailBody({ detail }: { detail: CompanyDetailResponse }) {
       <section className="space-y-2">
         <h4 className="flex items-center gap-2 text-sm font-semibold text-navy">
           <Users className="h-4 w-4" />
-          Recruteurs associés
+          Comptes associés
         </h4>
         {company.recruiters && company.recruiters.length > 0 ? (
           <ul className="space-y-2">
@@ -1425,7 +1425,7 @@ function CompanyDetailBody({ detail }: { detail: CompanyDetailResponse }) {
           </ul>
         ) : (
           <p className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-4 text-center text-xs text-muted-foreground">
-            Aucun recruteur rattaché.
+            Aucun compte rattaché.
           </p>
         )}
       </section>

@@ -161,14 +161,14 @@ export function HowItWorksPage() {
         </div>
       </SectionShell>
 
-      {/* Pour les recruteurs */}
+      {/* Pour les entreprises */}
       <SectionShell className="bg-surface">
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-12">
           <div>
             <SectionHeading
               align="left"
-              eyebrow="Recruteurs"
-              title="Pour les recruteurs"
+              eyebrow="Entreprises"
+              title="Pour les entreprises"
               description="Un espace dédié aux entreprises italiennes pour recruter des talents préformés, vérifiés et accompagnés dans leur mobilité."
               className="max-w-xl"
             />
@@ -192,7 +192,7 @@ export function HowItWorksPage() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/10 text-brand">
                   <Building2 className="h-5 w-5" />
                 </div>
-                <h3 className="font-semibold text-navy">Le parcours recruteur</h3>
+                <h3 className="font-semibold text-navy">Le parcours entreprise</h3>
               </div>
               <ul className="mt-6 space-y-4">
                 {recruiterSteps.map((step, index) => (
@@ -259,7 +259,7 @@ export function HowItWorksPage() {
                 Lancez-vous avec COORIZON
               </h2>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-100 text-balance">
-                Que vous soyez candidat, recruteur ou formateur, notre plateforme vous accompagne à
+                Que vous soyez candidat, entreprise ou formateur, notre plateforme vous accompagne à
                 chaque étape de votre projet de mobilité professionnelle vers l'Italie.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -278,13 +278,13 @@ export function HowItWorksPage() {
                   onClick={() => navigate("register-recruiter")}
                   className="border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                 >
-                  Espace recruteur
+                  Espace entreprise
                 </Button>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <CtaFeature icon={Briefcase} title="Candidats" desc="Profil, formation, offres, visa." />
-              <CtaFeature icon={Building2} title="Recruteurs" desc="Entreprises vérifiées et profils qualifiés." />
+              <CtaFeature icon={Building2} title="Entreprises" desc="Entreprises vérifiées et profils qualifiés." />
               <CtaFeature icon={GraduationCap} title="Formateurs" desc="Cours, examens et suivi des apprenants." />
               <CtaFeature icon={Plane} title="Accompagnement" desc="Un agent dédié jusqu'au départ en Italie." />
             </div>

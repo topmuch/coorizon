@@ -28,7 +28,7 @@ export const ALL_ROLES: Role[] = [
 
 export const ROLE_LABELS: Record<Role, string> = {
   Candidate: "Candidat",
-  Recruiter: "Recruteur",
+  Recruiter: "Entreprise",
   Trainer: "Formateur",
   RecruitmentAgent: "Agent de recrutement",
   ImmigrationAgent: "Agent d'immigration",

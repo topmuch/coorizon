@@ -303,7 +303,7 @@ export function PolitiqueConfidentialitePage() {
                 "Données de dossier candidat : CV, photo (facultative), niveau de langue, expériences, diplômes, documents administratifs (passeport, attestations).",
                 "Données de parcours sur la plateforme : inscriptions aux formations, résultats d'examens, candidatures aux offres, candidatures d'immigration.",
                 "Données de paiement : référence du forfait de formation, statut de validation (aucun numéro de carte bancaire n'est stocké sur la plateforme).",
-                "Données entreprise (recruteurs) : raison sociale, numéro d'enregistrement, documents légaux, offres publiées.",
+                "Données entreprise : raison sociale, numéro d'enregistrement, documents légaux, offres publiées.",
                 "Données techniques : journaux de connexion et d'audit (adresse IP, horodatage) pour la sécurité du service.",
               ]}
             />
@@ -448,7 +448,7 @@ export function ConditionsGeneralesPage() {
               items={[
                 "Chaque utilisateur fournit des informations exactes, complètes et à jour lors de son inscription (identité, coordonnées, documents).",
                 "Un compte est strictement personnel : il est interdit de le partager, de le céder ou de créer plusieurs comptes.",
-                "Les comptes recruteurs et entreprises font l'objet d'une validation préalable par l'administration COORIZON avant toute publication d'offre.",
+                "Les comptes entreprises font l'objet d'une validation préalable par l'administration COORIZON avant toute publication d'offre.",
                 "Les comptes candidats accèdent à l'ensemble des modules (formation, offres, immigration) après validation du forfait de formation.",
                 "COORIZON se réserve le droit de suspendre ou désactiver un compte en cas de fausse déclaration, d'activité frauduleuse ou de non-respect des présentes conditions.",
               ]}

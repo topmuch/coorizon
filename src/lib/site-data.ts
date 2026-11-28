@@ -362,7 +362,7 @@ export const journeySteps: JourneyStep[] = [
   {
     step: 4,
     title: "Sélection & entretien",
-    description: "Les recruteurs présélectionnent les profils et programment les entretiens.",
+    description: "Les entreprises présélectionnent les profils et programment les entretiens.",
     icon: Cpu,
   },
   {
@@ -408,7 +408,7 @@ export const faqItems: FaqItem[] = [
     category: "Recrutement",
     question: "Comment les entreprises vérifient-elles les profils ?",
     answer:
-      "Chaque entreprise partenaire est validée par l'administration COORIZON avant de pouvoir publier des offres. Les recruteurs consultent les profils, les CV et les documents validés par nos équipes.",
+      "Chaque entreprise partenaire est validée par l'administration COORIZON avant de pouvoir publier des offres. Les entreprises consultent les profils, les CV et les documents validés par nos équipes.",
   },
   {
     category: "Recrutement",

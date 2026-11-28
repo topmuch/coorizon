@@ -80,7 +80,7 @@ function validateMessages(raw: unknown): IncomingMessage[] | null {
 const COORIZON_SYSTEM_PROMPT =
   "Tu es l'assistant IA de COORIZON, une plateforme de recrutement international, " +
   "de formation en italien et d'accompagnement à l'immigration vers l'Italie. " +
-  "Tu aides les candidats, recruteurs et agents. Réponds en français, de manière " +
+  "Tu aides les candidats, entreprises et agents. Réponds en français, de manière " +
   "concise et utile. Si on te pose une question hors sujet, redirige poliment vers " +
   "le support COORIZON.";
 
@@ -101,7 +101,7 @@ function buildSystemPrompt(roleLabel: string, context: string): string {
 
 const ROLE_LABELS: Record<string, string> = {
   Candidate: "candidat",
-  Recruiter: "recruteur",
+  Recruiter: "entreprise",
   Trainer: "formateur",
   RecruitmentAgent: "agent de recrutement",
   ImmigrationAgent: "agent d'immigration",
