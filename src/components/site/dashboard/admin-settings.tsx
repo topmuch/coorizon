@@ -19,6 +19,7 @@ import {
   Loader2,
   AlertCircle,
   MessageCircle,
+  Mail,
   Send,
   type LucideIcon,
 } from "lucide-react";
@@ -48,6 +49,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/session-provider";
@@ -147,7 +149,8 @@ export function AdminSettings() {
           Paramètres
         </h1>
         <p className="text-sm text-muted-foreground">
-          Configuration générale de la plateforme et informations système.
+          Configuration de la plateforme — informations générales, accès et
+          rôles, communications, système et données personnelles.
         </p>
       </header>
 
@@ -164,6 +167,33 @@ export function AdminSettings() {
         </Alert>
       )}
 
+      {/* Settings sections */}
+      <Tabs defaultValue="general" className="gap-4">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 sm:justify-center">
+          <TabsTrigger value="general" className="gap-1.5">
+            <Settings className="h-3.5 w-3.5" />
+            Général
+          </TabsTrigger>
+          <TabsTrigger value="access" className="gap-1.5">
+            <Lock className="h-3.5 w-3.5" />
+            Accès &amp; rôles
+          </TabsTrigger>
+          <TabsTrigger value="emails" className="gap-1.5">
+            <Mail className="h-3.5 w-3.5" />
+            Communications
+          </TabsTrigger>
+          <TabsTrigger value="system" className="gap-1.5">
+            <Server className="h-3.5 w-3.5" />
+            Système
+          </TabsTrigger>
+          <TabsTrigger value="rgpd" className="gap-1.5">
+            <Shield className="h-3.5 w-3.5" />
+            Données &amp; RGPD
+          </TabsTrigger>
+        </TabsList>
+
+        {/* General: platform overview */}
+        <TabsContent value="general" className="mt-2 space-y-6">
       {/* Platform info */}
       <Card>
         <CardHeader>
@@ -269,6 +299,10 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
+        </TabsContent>
+
+        {/* Access & roles */}
+        <TabsContent value="access" className="mt-2 space-y-6">
       {/* SuperAdmin: role management */}
       {isSuperAdmin && (
         <Card>
@@ -313,13 +347,22 @@ export function AdminSettings() {
 
       {/* Connection profiles access (Admin & SuperAdmin) */}
       <RoleAccessCard />
+        </TabsContent>
 
+        {/* Communications: SMTP, notifications, WhatsApp */}
+        <TabsContent value="emails" className="mt-2 space-y-6">
       {/* SMTP server (SuperAdmin settings) */}
       <SmtpSettingsCard />
 
       {/* Emails & notifications (Admin & SuperAdmin) */}
       <NotificationSettingsCard />
 
+      {/* WhatsApp floating button numbers */}
+      <WhatsAppSettingsCard />
+        </TabsContent>
+
+        {/* System: general settings, security, about */}
+        <TabsContent value="system" className="mt-2 space-y-6">
       {/* General settings (SuperAdmin only) */}
       <Card>
         <CardHeader>
@@ -447,8 +490,11 @@ export function AdminSettings() {
           mesure de sécurité.
         </AlertDescription>
       </Alert>
+        </TabsContent>
 
-      {/* ─── GDPR / Data Privacy ─── */}
+        {/* Data & RGPD */}
+        <TabsContent value="rgpd" className="mt-2 space-y-6">
+      {/* GDPR / Data Privacy */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -499,8 +545,8 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* ─── WhatsApp Numbers ─── */}
-      <WhatsAppSettingsCard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -803,7 +849,7 @@ function NotificationSettingsCard() {
                     </ul>
                   )}
                   <p className="text-[11px] text-muted-foreground">
-                    Les emails partent via le serveur SMTP configuré ci-dessus (Paramètres &gt; Serveur SMTP). Sans serveur configuré, ils sont uniquement enregistrés dans ce journal (envoi simulé).
+                    Les emails partent via le serveur SMTP configuré dans l'onglet « Communications » (Serveur SMTP). Sans serveur configuré, ils sont uniquement enregistrés dans ce journal (envoi simulé).
                   </p>
                 </div>
               )}
@@ -1325,7 +1371,7 @@ function RoleAccessCard() {
         )}
         {!loading && !loadError && roles.some((r) => !r.enabled && !r.locked) && (
           <p className="rounded-md border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-            Les profils désactivés apparaissent avec le badge « Connexions désactivées » dans l'onglet Utilisateurs et ne peuvent plus se connecter depuis les pages de connexion.
+            Les profils désactivés ne sont plus affichés sur les pages de connexion : les comptes concernés ne peuvent plus se connecter et portent le badge « Connexions désactivées » dans l'onglet Utilisateurs.
           </p>
         )}
       </CardContent>
