@@ -34,6 +34,9 @@ interface PublicProfile {
   desiredJob: string | null;
   sector: string | null;
   educationLevel: string | null;
+  profession: string | null;
+  department: string | null;
+  preferredItalianRegion: string | null;
   diplomas: string | null;
   experiences: string | null;
   skills: string | null;
@@ -59,6 +62,9 @@ function defaultProfile(): PublicProfile {
     desiredJob: null,
     sector: null,
     educationLevel: null,
+    profession: null,
+    department: null,
+    preferredItalianRegion: null,
     diplomas: null,
     experiences: null,
     skills: null,
@@ -153,6 +159,9 @@ export async function GET(_req: NextRequest) {
           desiredJob: p.desiredJob,
           sector: p.sector,
           educationLevel: p.educationLevel,
+          profession: p.profession,
+          department: p.department,
+          preferredItalianRegion: p.preferredItalianRegion,
           diplomas: p.diplomas,
           experiences: p.experiences,
           skills: p.skills,
@@ -188,7 +197,8 @@ export async function GET(_req: NextRequest) {
  * Body accepts:
  *   User fields:    firstName, lastName, phone
  *   Profile fields: nationality, residenceCountry, city, dateOfBirth (YYYY-MM-DD),
- *                   desiredJob, sector, educationLevel, diplomas, experiences,
+ *                   desiredJob, sector, educationLevel, profession, department,
+ *                   preferredItalianRegion, diplomas, experiences,
  *                   skills, languages, italianLevel (A1–C2 or null),
  *                   availability, geographicMobility
  */
@@ -245,6 +255,9 @@ export async function PUT(req: NextRequest) {
     const desiredJob = toOptionalString(body.desiredJob);
     const sector = toOptionalString(body.sector);
     const educationLevel = toOptionalString(body.educationLevel);
+    const profession = toOptionalString(body.profession);
+    const department = toOptionalString(body.department);
+    const preferredItalianRegion = toOptionalString(body.preferredItalianRegion);
     const diplomas = toOptionalString(body.diplomas);
     const experiences = toOptionalString(body.experiences);
     const skills = toOptionalString(body.skills);
@@ -281,6 +294,9 @@ export async function PUT(req: NextRequest) {
       desiredJob,
       sector,
       educationLevel,
+      profession,
+      department,
+      preferredItalianRegion,
       diplomas,
       experiences,
       skills,

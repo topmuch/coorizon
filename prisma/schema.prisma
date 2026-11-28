@@ -236,11 +236,17 @@ model CandidateProfile {
   desiredJob         String?
   sector             String?
   educationLevel     String?
+  profession         String? // Métier choisi dans la liste COORIZON (inscription)
   diplomas           String? // free text / JSON string
   experiences        String? // free text / JSON string
   skills             String? // free text / JSON string
   languages          String? // free text / JSON string
   italianLevel       CourseLevel?
+
+  // Centre de formation (département du Sénégal) & région italienne souhaitée
+  department             String?
+  preferredItalianRegion String?
+
   availability       String?
   geographicMobility String?
 

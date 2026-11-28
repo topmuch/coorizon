@@ -10,6 +10,7 @@ import {
   Clock,
   FileCheck,
   GraduationCap,
+  Home,
   Plane,
   RefreshCw,
   Send,
@@ -28,6 +29,8 @@ import { cn } from "@/lib/utils";
 interface CandidateStats {
   profileCompletion: number;
   italianLevel: string | null;
+  department: string | null;
+  profession: string | null;
   activeEnrollments: number;
   applicationsSent: number;
   applicationsInProgress: number;
@@ -385,6 +388,63 @@ export function CandidateOverview() {
           Voici un aperçu de votre activité sur COORIZON.
         </p>
       </header>
+
+      {/* Training centre banner (department chosen at registration) */}
+      {stats.department ? (
+        <section
+          aria-label="Centre de formation"
+          className="flex flex-col gap-3 rounded-xl border border-brand bg-brand p-4 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/20"
+            >
+              <Home className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="text-xs font-medium uppercase tracking-wide text-white/80">
+                Votre centre de formation
+              </div>
+              <div className="text-lg font-bold leading-tight">
+                Centre de {stats.department}
+              </div>
+              {stats.profession && (
+                <div className="mt-0.5 flex items-center gap-1 text-sm text-white/90">
+                  <Briefcase className="h-3.5 w-3.5" />
+                  {stats.profession}
+                </div>
+              )}
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-white/50 bg-white/15 text-white hover:bg-white hover:text-brand"
+            onClick={() => navigate("dashboard", { section: "profile" })}
+          >
+            Modifier
+          </Button>
+        </section>
+      ) : (
+        <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-500/10">
+          <Home className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-navy">Aucun centre de formation choisi</AlertTitle>
+          <AlertDescription>
+            Renseignez votre département dans votre profil pour connaître votre
+            centre de formation.
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2 w-fit"
+              onClick={() => navigate("dashboard", { section: "profile" })}
+            >
+              Compléter mon profil
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Pending documents info alert */}
       {stats.pendingDocs > 0 && (

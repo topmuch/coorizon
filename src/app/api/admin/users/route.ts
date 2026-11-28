@@ -42,6 +42,7 @@ function parsePageSize(raw: string | null): number {
  * Query params:
  *  - role     : filter by Role (Candidate|Recruiter|Trainer|RecruitmentAgent|ImmigrationAgent|Admin|SuperAdmin)
  *  - status   : filter by UserStatus (Active|Pending|Suspended|Deactivated)
+ *  - department : filter candidates by training centre department (Senegal)
  *  - q        : search across firstName, lastName, email (contains, case-insensitive)
  *  - page     : 1-based page index (default 1)
  *  - pageSize : items per page (default 20, max 100)
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const roleParam = searchParams.get("role");
     const statusParam = searchParams.get("status");
+    const departmentParam = searchParams.get("department")?.trim() ?? "";
     const qParam = searchParams.get("q")?.trim() ?? "";
 
     const role = roleParam && isRole(roleParam) ? (roleParam as Role) : undefined;
@@ -73,6 +75,9 @@ export async function GET(req: NextRequest) {
     const filters: Prisma.UserWhereInput[] = [];
     if (role) filters.push({ role });
     if (status) filters.push({ status });
+    if (departmentParam) {
+      filters.push({ candidateProfile: { department: departmentParam } });
+    }
     if (qParam.length > 0) {
       filters.push({
         OR: [
@@ -99,7 +104,7 @@ export async function GET(req: NextRequest) {
           isActive: true,
           createdAt: true,
           lastLoginAt: true,
-          candidateProfile: { select: { id: true } },
+          candidateProfile: { select: { id: true, department: true } },
           recruiterProfile: {
             select: {
               id: true,

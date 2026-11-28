@@ -43,7 +43,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -87,6 +89,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@/lib/auth/session-provider";
 import { ROLE_LABELS, ROLES, ALL_ROLES } from "@/lib/permissions";
+import { SENEGAL_REGIONS } from "@/lib/senegal-data";
 import type { Role } from "@/lib/permissions";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -104,7 +107,7 @@ interface UserListItem {
   isActive: boolean;
   createdAt: string;
   lastLoginAt: string | null;
-  candidateProfile: { id: string } | null;
+  candidateProfile: { id: string; department: string | null } | null;
   recruiterProfile: {
     id: string;
     company: { legalName: string } | null;
@@ -139,6 +142,10 @@ interface UserDetail {
     city: string | null;
     desiredJob: string | null;
     sector: string | null;
+    profession: string | null;
+    department: string | null;
+    preferredItalianRegion: string | null;
+    educationLevel: string | null;
     italianLevel: string | null;
     completionPct: number;
   } | null;
@@ -400,6 +407,7 @@ export function AdminUsers() {
   // Filters
   const [roleFilter, setRoleFilter] = React.useState<string>("all");
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [centreFilter, setCentreFilter] = React.useState<string>("all");
   const [searchInput, setSearchInput] = React.useState("");
   const [appliedSearch, setAppliedSearch] = React.useState("");
 
@@ -444,6 +452,7 @@ export function AdminUsers() {
       const qs = new URLSearchParams();
       if (roleFilter !== "all") qs.set("role", roleFilter);
       if (statusFilter !== "all") qs.set("status", statusFilter);
+      if (centreFilter !== "all") qs.set("department", centreFilter);
       if (appliedSearch.trim()) qs.set("q", appliedSearch.trim());
       qs.set("page", String(page));
       qs.set("pageSize", String(PAGE_SIZE));
@@ -462,12 +471,10 @@ export function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, [roleFilter, statusFilter, appliedSearch, page]);
-
+  }, [roleFilter, statusFilter, centreFilter, appliedSearch, page]);
   React.useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-
   // Fetch the platform-wide disabled profiles (Paramètres) to badge the
   // affected accounts.
   React.useEffect(() => {
@@ -492,7 +499,7 @@ export function AdminUsers() {
   // Reset to page 1 when filters change.
   React.useEffect(() => {
     setPage(1);
-  }, [roleFilter, statusFilter, appliedSearch]);
+  }, [roleFilter, statusFilter, centreFilter, appliedSearch]);
 
   // ─── Fetch detail ─────────────────────────────────────────────────────
   React.useEffect(() => {
@@ -830,6 +837,30 @@ export function AdminUsers() {
             </div>
 
             <div className="space-y-1.5">
+              <Label htmlFor="filter-centre" className="text-xs text-muted-foreground">
+                Centre (département)
+              </Label>
+              <Select value={centreFilter} onValueChange={setCentreFilter}>
+                <SelectTrigger id="filter-centre" className="w-full">
+                  <SelectValue placeholder="Tous les centres" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-2rem)]">
+                  <SelectItem value="all">Tous les centres</SelectItem>
+                  {SENEGAL_REGIONS.map((r) => (
+                    <SelectGroup key={r.region}>
+                      <SelectLabel>Région de {r.region}</SelectLabel>
+                      {r.departments.map((d) => (
+                        <SelectItem key={d} value={d}>
+                          {d}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="filter-search" className="text-xs text-muted-foreground">
                 Recherche
               </Label>
@@ -865,6 +896,7 @@ export function AdminUsers() {
                 onClick={() => {
                   setRoleFilter("all");
                   setStatusFilter("all");
+                  setCentreFilter("all");
                   setSearchInput("");
                   setAppliedSearch("");
                 }}
@@ -936,6 +968,7 @@ export function AdminUsers() {
                   <TableRow>
                     <TableHead>Nom</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Centre</TableHead>
                     <TableHead>Rôle</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Inscrit le</TableHead>
@@ -962,6 +995,15 @@ export function AdminUsers() {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                      <TableCell>
+                        {u.candidateProfile?.department ? (
+                          <Badge className="bg-brand-green text-white border border-brand-green">
+                            Centre de {u.candidateProfile.department}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1.5">
                           <RoleBadge role={u.role} />
@@ -1043,6 +1085,11 @@ export function AdminUsers() {
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <RoleBadge role={u.role} />
                         <StatusBadge status={u.status} />
+                        {u.candidateProfile?.department && (
+                          <Badge className="bg-brand-green text-white border border-brand-green">
+                            Centre de {u.candidateProfile.department}
+                          </Badge>
+                        )}
                         {disabledRoles.includes(u.role) && (
                           <Badge variant="outline" className="border-amber-400 bg-amber-50 font-medium text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
                             Connexions désactivées
@@ -1184,6 +1231,23 @@ export function AdminUsers() {
                     <Field
                       label="Pays de résidence"
                       value={detail.candidateProfile.residenceCountry}
+                    />
+                    <Field
+                      label="Centre de formation (département)"
+                      value={
+                        detail.candidateProfile.department
+                          ? `Centre de ${detail.candidateProfile.department}`
+                          : null
+                      }
+                    />
+                    <Field label="Profession" value={detail.candidateProfile.profession} />
+                    <Field
+                      label="Région italienne souhaitée"
+                      value={detail.candidateProfile.preferredItalianRegion}
+                    />
+                    <Field
+                      label="Niveau d'études"
+                      value={detail.candidateProfile.educationLevel}
                     />
                     <Field
                       label="Niveau d'italien"

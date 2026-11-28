@@ -77,11 +77,13 @@ const FORFAIT_NAV: NavSection = { id: "forfait", label: "Forfait", icon: Shoppin
 
 /**
  * Sections accessible to a candidate whose formation forfait has not been
- * bought/validated yet — profile, CV, messaging, notifications, settings,
- * plus the "Forfait" purchase tab. Every other module stays hidden until the
- * administration validates the payment.
+ * bought/validated yet — overview (with the training centre banner), profile,
+ * messaging, notifications, settings, plus the "Forfait" purchase tab.
+ * Every other module stays hidden until the administration validates the
+ * payment.
  */
 export const UNPAID_ALLOWED_SECTIONS: DashboardSection[] = [
+  "overview",
   "forfait",
   "profile",
   "messages",

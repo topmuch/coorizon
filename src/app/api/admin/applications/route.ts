@@ -12,6 +12,7 @@ import type { ApplicationStatus } from "@prisma/client";
  * Query params:
  *  - status:     filter by application status (ApplicationStatus)
  *  - companyId:  filter by job offer's company id
+ *  - department: filter by candidate's training centre department (Senegal)
  *  - q:          free-text search on candidate firstName / lastName / email
  *  - page:       1-based page number (default 1)
  *  - pageSize:   items per page (default 20, capped to 100)
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const statusParam = searchParams.get("status");
     const companyIdParam = searchParams.get("companyId");
+    const departmentParam = searchParams.get("department")?.trim() ?? "";
     const qParam = searchParams.get("q");
     const pageParam = searchParams.get("page");
     const pageSizeParam = searchParams.get("pageSize");
@@ -68,6 +70,7 @@ export async function GET(req: NextRequest) {
       status?: ApplicationStatus;
       jobOffer?: { companyId?: string };
       candidate?: {
+        candidateProfile?: { department: string };
         OR?: Array<{
           firstName?: { contains: string };
           lastName?: { contains: string };
@@ -79,9 +82,16 @@ export async function GET(req: NextRequest) {
     const where: WhereClause = {};
     if (status) where.status = status;
     if (companyId) where.jobOffer = { companyId };
+    if (departmentParam) {
+      where.candidate = {
+        ...where.candidate,
+        candidateProfile: { department: departmentParam },
+      };
+    }
 
     if (q) {
       where.candidate = {
+        ...where.candidate,
         OR: [
           { firstName: { contains: q } },
           { lastName: { contains: q } },
@@ -100,11 +110,17 @@ export async function GET(req: NextRequest) {
               firstName: true,
               lastName: true,
               email: true,
+              phone: true,
               candidateProfile: {
                 select: {
                   desiredJob: true,
                   sector: true,
                   city: true,
+                  profession: true,
+                  department: true,
+                  preferredItalianRegion: true,
+                  educationLevel: true,
+                  italianLevel: true,
                 },
               },
             },

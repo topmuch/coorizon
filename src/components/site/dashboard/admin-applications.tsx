@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Send,
   Search,
@@ -18,6 +20,11 @@ import {
   Inbox,
   Plus,
   ArrowRight,
+  Download,
+  Home,
+  Phone,
+  GraduationCap,
+  Plane,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +45,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -74,6 +83,11 @@ interface CandidateProfileSummary {
   desiredJob: string | null;
   sector: string | null;
   city: string | null;
+  profession: string | null;
+  department: string | null;
+  preferredItalianRegion: string | null;
+  educationLevel: string | null;
+  italianLevel: string | null;
 }
 
 interface CandidateSummary {
@@ -81,6 +95,7 @@ interface CandidateSummary {
   firstName: string | null;
   lastName: string | null;
   email: string;
+  phone: string | null;
   candidateProfile: CandidateProfileSummary | null;
 }
 
@@ -204,7 +219,33 @@ function formatDateTimeFr(iso: string): string {
   );
 }
 
+function fullNameOf(c: { firstName: string | null; lastName: string | null }): string {
+  return `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || "Candidat";
+}
+
+/** jsPDF standard fonts use WinAnsi: replace unsupported glyphs (→, –, ’). */
+function pdfSafe(value: string | null | undefined): string {
+  if (value == null) return "";
+  return value
+    .replaceAll("\u2192", "->")
+    .replaceAll("\u2013", "-")
+    .replaceAll("\u2014", "-")
+    .replaceAll("\u2019", "'")
+    .replaceAll("\u00A0", " ");
+}
+
+function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "candidat";
+}
+
 // ─── Constants ─────────────────────────────────────────────────────────────
+
+import { SENEGAL_REGIONS } from "@/lib/senegal-data";
 
 const PAGE_SIZE = 20;
 
@@ -229,11 +270,15 @@ export function AdminApplications() {
 
   // Filters
   const [statusFilter, setStatusFilter] = React.useState<"all" | ApplicationStatus>("all");
+  const [departmentFilter, setDepartmentFilter] = React.useState<string>("all");
   const [searchInput, setSearchInput] = React.useState("");
   const [appliedSearch, setAppliedSearch] = React.useState("");
 
   // Details dialog
   const [detailApp, setDetailApp] = React.useState<ApplicationListItem | null>(null);
+
+  // PDF export state
+  const [exporting, setExporting] = React.useState(false);
 
   // Add application dialog
   const [showAddDialog, setShowAddDialog] = React.useState(false);
@@ -247,6 +292,7 @@ export function AdminApplications() {
     try {
       const qs = new URLSearchParams();
       if (statusFilter !== "all") qs.set("status", statusFilter);
+      if (departmentFilter !== "all") qs.set("department", departmentFilter);
       if (appliedSearch.trim()) qs.set("q", appliedSearch.trim());
       qs.set("page", String(page));
       qs.set("pageSize", String(PAGE_SIZE));
@@ -266,7 +312,7 @@ export function AdminApplications() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, appliedSearch, page]);
+  }, [statusFilter, departmentFilter, appliedSearch, page]);
 
   React.useEffect(() => {
     fetchApplications();
@@ -275,7 +321,7 @@ export function AdminApplications() {
   // Reset to page 1 whenever filters change.
   React.useEffect(() => {
     setPage(1);
-  }, [statusFilter, appliedSearch]);
+  }, [statusFilter, departmentFilter, appliedSearch]);
 
   const applySearch = () => {
     setAppliedSearch(searchInput.trim());
@@ -290,12 +336,184 @@ export function AdminApplications() {
 
   const resetFilters = () => {
     setStatusFilter("all");
+    setDepartmentFilter("all");
     setSearchInput("");
     setAppliedSearch("");
     setPage(1);
   };
 
-  const hasActiveFilters = statusFilter !== "all" || appliedSearch.trim().length > 0;
+  const hasActiveFilters =
+    statusFilter !== "all" || departmentFilter !== "all" || appliedSearch.trim().length > 0;
+
+  // ─── PDF export: full dossier of one candidature ─────────────────────
+  const exportDossierPdf = (app: ApplicationListItem) => {
+    const c = app.candidate;
+    const p = c.candidateProfile;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(20, 90, 50);
+    doc.text("COORIZON", 40, 54);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(90, 90, 90);
+    doc.text("Dossier de candidature", 40, 70);
+    doc.setDrawColor(20, 90, 50);
+    doc.setLineWidth(1);
+    doc.line(40, 80, pageWidth - 40, 80);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(30, 30, 30);
+    doc.text(pdfSafe(`${fullNameOf(c)} - ${app.jobOffer.title}`), 40, 102);
+
+    autoTable(doc, {
+      startY: 118,
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 5 },
+      headStyles: { fillColor: [20, 90, 50], textColor: 255 },
+      head: [["Informations du candidat", ""]],
+      body: [
+        ["Nom complet", fullNameOf(c)],
+        ["Email", c.email],
+        ["Telephone", c.phone ?? "-"],
+        ["Centre de formation", p?.department ? `Centre de ${p.department}` : "-"],
+        ["Profession", p?.profession ?? "-"],
+        ["Poste recherche", p?.desiredJob ?? "-"],
+        ["Secteur", p?.sector ?? "-"],
+        ["Ville", p?.city ?? "-"],
+        ["Niveau d'etudes", pdfSafe(p?.educationLevel) ?? "-"],
+        ["Niveau d'italien", p?.italianLevel ?? "-"],
+        ["Region italienne souhaitee", p?.preferredItalianRegion ?? "-"],
+      ],
+      theme: "grid",
+      columnStyles: { 0: { fontStyle: "bold", cellWidth: 180 } },
+    });
+
+    type WithLastAutoTable = { lastAutoTable?: { finalY: number } };
+    let y = ((doc as unknown as WithLastAutoTable).lastAutoTable?.finalY ?? 300) + 28;
+
+    autoTable(doc, {
+      startY: y,
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 5 },
+      headStyles: { fillColor: [40, 60, 90], textColor: 255 },
+      head: [["Candidature", ""]],
+      body: [
+        ["Offre", pdfSafe(app.jobOffer.title)],
+        ["Entreprise", pdfSafe(app.jobOffer.company.legalName)],
+        ["Ville de l'offre", app.jobOffer.city ?? "-"],
+        ["Statut", pdfSafe(getStatusMeta(app.status).label)],
+        ["Envoyee le", formatDateTimeFr(app.createdAt)],
+        ["Derniere mise a jour", formatDateTimeFr(app.updatedAt)],
+      ],
+      theme: "grid",
+      columnStyles: { 0: { fontStyle: "bold", cellWidth: 180 } },
+    });
+
+    y = ((doc as unknown as WithLastAutoTable).lastAutoTable?.finalY ?? y) + 28;
+
+    if (app.coverLetter) {
+      autoTable(doc, {
+        startY: y,
+        styles: { font: "helvetica", fontSize: 9, cellPadding: 5 },
+        headStyles: { fillColor: [120, 120, 120], textColor: 255 },
+        head: [["Lettre de motivation"]],
+        body: [[pdfSafe(app.coverLetter)]],
+        theme: "grid",
+      });
+      y = ((doc as unknown as WithLastAutoTable).lastAutoTable?.finalY ?? y) + 20;
+    }
+
+    if (app.recruiterNote) {
+      autoTable(doc, {
+        startY: y,
+        styles: { font: "helvetica", fontSize: 9, cellPadding: 5 },
+        headStyles: { fillColor: [180, 140, 40], textColor: 255 },
+        head: [["Note de l'entreprise"]],
+        body: [[pdfSafe(app.recruiterNote)]],
+        theme: "grid",
+      });
+    }
+
+    doc.setFontSize(8);
+    doc.setTextColor(130, 130, 130);
+    doc.text(
+      `Document genere automatiquement par COORIZON le ${formatDateTimeFr(new Date().toISOString())}`,
+      40,
+      doc.internal.pageSize.getHeight() - 30
+    );
+
+    doc.save(`dossier-candidature-${slugify(fullNameOf(c))}-${formatDateFr(app.createdAt).replaceAll("/", "-")}.pdf`);
+  };
+
+  // ─── PDF export: list of candidatures (current filters, up to 200) ────
+  const exportListPdf = async () => {
+    setExporting(true);
+    try {
+      const qs = new URLSearchParams();
+      if (statusFilter !== "all") qs.set("status", statusFilter);
+      if (departmentFilter !== "all") qs.set("department", departmentFilter);
+      if (appliedSearch.trim()) qs.set("q", appliedSearch.trim());
+      qs.set("page", "1");
+      qs.set("pageSize", "200");
+      const res = await fetch(`/api/admin/applications?${qs.toString()}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Export impossible");
+      const data = (await res.json()) as ApplicationsListResponse;
+      const apps = data.applications;
+
+      const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "landscape" });
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(20, 90, 50);
+      doc.text("COORIZON", 40, 44);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      const filterLabel =
+        departmentFilter !== "all" ? ` - Departement : ${departmentFilter}` : "";
+      doc.text(
+        pdfSafe(`Liste des candidatures${filterLabel} (${apps.length})`),
+        40,
+        60
+      );
+
+      autoTable(doc, {
+        startY: 74,
+        styles: { font: "helvetica", fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: [20, 90, 50], textColor: 255 },
+        head: [[
+          "Candidat", "Email", "Telephone", "Centre", "Profession",
+          "Niveau etudes", "Region Italie", "Offre", "Entreprise", "Statut", "Date",
+        ]],
+        body: apps.map((app) => {
+          const p = app.candidate.candidateProfile;
+          return [
+            fullNameOf(app.candidate),
+            app.candidate.email,
+            app.candidate.phone ?? "-",
+            p?.department ?? "-",
+            pdfSafe(p?.profession) ?? "-",
+            pdfSafe(p?.educationLevel) ?? "-",
+            p?.preferredItalianRegion ?? "-",
+            pdfSafe(app.jobOffer.title),
+            pdfSafe(app.jobOffer.company.legalName),
+            pdfSafe(getStatusMeta(app.status).label),
+            formatDateFr(app.createdAt),
+          ];
+        }),
+        theme: "grid",
+      });
+
+      doc.save(`candidatures-coorizon${departmentFilter !== "all" ? `-${slugify(departmentFilter)}` : ""}.pdf`);
+    } catch {
+      // best effort
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // ─── Render ────────────────────────────────────────────────────────────
 
@@ -308,11 +526,25 @@ export function AdminApplications() {
             <Send className="h-6 w-6 text-brand" />
             Candidatures
           </h1>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Ajouter une candidature</span>
-            <span className="sm:hidden">Ajouter</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => void exportListPdf()}
+              disabled={exporting}
+              className="border-brand-green/40 text-brand-green hover:bg-brand-green/10"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {exporting ? "Export en cours…" : "Exporter la liste (PDF)"}
+              </span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Ajouter une candidature</span>
+              <span className="sm:hidden">Ajouter</span>
+            </Button>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">
           Vue globale de toutes les candidatures de la plateforme, toutes entreprises confondues.
@@ -322,7 +554,7 @@ export function AdminApplications() {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
             <div className="space-y-1.5">
               <Label htmlFor="search" className="text-xs font-medium text-muted-foreground">
                 Recherche candidat
@@ -356,6 +588,29 @@ export function AdminApplications() {
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="department-filter" className="text-xs font-medium text-muted-foreground">
+                Département (centre)
+              </Label>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger id="department-filter" className="w-full md:w-52">
+                  <SelectValue placeholder="Tous les départements" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-2rem)]">
+                  <SelectItem value="all">Tous les départements</SelectItem>
+                  {SENEGAL_REGIONS.map((r) => (
+                    <SelectGroup key={r.region}>
+                      <SelectLabel>Région de {r.region}</SelectLabel>
+                      {r.departments.map((d) => (
+                        <SelectItem key={d} value={d}>
+                          {d}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
@@ -420,6 +675,7 @@ export function AdminApplications() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Candidat</TableHead>
+                    <TableHead>Centre</TableHead>
                     <TableHead>Offre</TableHead>
                     <TableHead>Entreprise</TableHead>
                     <TableHead>Statut</TableHead>
@@ -518,6 +774,7 @@ export function AdminApplications() {
             <ApplicationDetailContent
               application={detailApp}
               onClose={() => setDetailApp(null)}
+              onExportPdf={exportDossierPdf}
             />
           ) : null}
         </DialogContent>
@@ -617,6 +874,15 @@ function ApplicationTableRow({ application, onDetails }: ApplicationRowProps) {
         </div>
       </TableCell>
       <TableCell>
+        {application.candidate.candidateProfile?.department ? (
+          <Badge className="bg-brand-green text-white border border-brand-green">
+            Centre de {application.candidate.candidateProfile.department}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell>
         <div className="flex items-center gap-1.5">
           <Briefcase className="h-3.5 w-3.5 text-brand" />
           <span className="truncate text-sm text-navy">{application.jobOffer.title}</span>
@@ -689,6 +955,13 @@ function ApplicationCardMobile({ application, onDetails }: ApplicationRowProps) 
           </Badge>
         </div>
 
+        {candidate.candidateProfile?.department && (
+          <Badge className="bg-brand-green text-white border border-brand-green">
+            <Home className="mr-1 h-3 w-3" />
+            Centre de {candidate.candidateProfile.department}
+          </Badge>
+        )}
+
         <div className="space-y-1 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Briefcase className="h-3 w-3 text-brand" />
@@ -719,9 +992,11 @@ function ApplicationCardMobile({ application, onDetails }: ApplicationRowProps) 
 function ApplicationDetailContent({
   application,
   onClose,
+  onExportPdf,
 }: {
   application: ApplicationListItem;
   onClose: () => void;
+  onExportPdf: (app: ApplicationListItem) => void;
 }) {
   const meta = getStatusMeta(application.status);
   const candidate = application.candidate;
@@ -751,7 +1026,7 @@ function ApplicationDetailContent({
         </DialogDescription>
       </DialogHeader>
 
-      {/* Candidate profile */}
+      {/* Candidate profile — full info */}
       <section className="space-y-2">
         <h4 className="flex items-center gap-2 text-sm font-semibold text-navy">
           <Users className="h-4 w-4 text-brand" />
@@ -762,6 +1037,26 @@ function ApplicationDetailContent({
             <Mail className="h-3.5 w-3.5 text-brand" />
             <span className="break-all text-muted-foreground">{candidate.email}</span>
           </div>
+          {candidate.phone && (
+            <div className="flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5 text-brand" />
+              <span className="text-muted-foreground">{candidate.phone}</span>
+            </div>
+          )}
+          {profile?.department && (
+            <div className="flex items-center gap-2">
+              <Home className="h-3.5 w-3.5 text-brand-green" />
+              <span className="font-semibold text-brand-green">
+                Centre de {profile.department}
+              </span>
+            </div>
+          )}
+          {profile?.profession && (
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-3.5 w-3.5 text-brand" />
+              <span className="text-muted-foreground">{profile.profession}</span>
+            </div>
+          )}
           {profile?.desiredJob && (
             <div className="flex items-center gap-2">
               <Briefcase className="h-3.5 w-3.5 text-brand" />
@@ -778,6 +1073,24 @@ function ApplicationDetailContent({
             <div className="flex items-center gap-2">
               <MapPin className="h-3.5 w-3.5 text-brand" />
               <span className="text-muted-foreground">{profile.city}</span>
+            </div>
+          )}
+          {profile?.educationLevel && (
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-3.5 w-3.5 text-brand" />
+              <span className="text-muted-foreground">{profile.educationLevel}</span>
+            </div>
+          )}
+          {profile?.italianLevel && (
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-3.5 w-3.5 text-brand" />
+              <span className="text-muted-foreground">Italien : {profile.italianLevel}</span>
+            </div>
+          )}
+          {profile?.preferredItalianRegion && (
+            <div className="flex items-center gap-2">
+              <Plane className="h-3.5 w-3.5 text-brand" />
+              <span className="text-muted-foreground">{profile.preferredItalianRegion}</span>
             </div>
           )}
         </div>
@@ -865,7 +1178,15 @@ function ApplicationDetailContent({
         </div>
       </section>
 
-      <DialogFooter>
+      <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <Button
+          variant="outline"
+          className="border-brand-green/40 text-brand-green hover:bg-brand-green/10"
+          onClick={() => onExportPdf(application)}
+        >
+          <Download className="mr-1.5 h-4 w-4" />
+          Exporter le dossier (PDF)
+        </Button>
         <Button variant="outline" onClick={onClose}>
           Fermer
         </Button>

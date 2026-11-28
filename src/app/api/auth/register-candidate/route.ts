@@ -16,7 +16,8 @@ import { sendEmail, sendAdminAlert, emailWrap } from "@/lib/email";
  *
  * Body:
  *   firstName, lastName, email, password, phone?,
- *   nationality?, residenceCountry?, city?, desiredJob?, sector?, italianLevel?
+ *   nationality?, residenceCountry?, city?, desiredJob?, sector?, italianLevel?,
+ *   profession?, educationLevel?, department?, preferredItalianRegion?
  */
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,28 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await hashPassword(password);
 
+    // --- New registration fields (profession, éducation, département, région) ---
+    const profession =
+      typeof body.profession === "string" && body.profession.trim()
+        ? body.profession.trim()
+        : null;
+    const educationLevel =
+      typeof body.educationLevel === "string" && body.educationLevel.trim()
+        ? body.educationLevel.trim()
+        : null;
+    const department =
+      typeof body.department === "string" && body.department.trim()
+        ? body.department.trim()
+        : null;
+    const preferredItalianRegion =
+      typeof body.preferredItalianRegion === "string" && body.preferredItalianRegion.trim()
+        ? body.preferredItalianRegion.trim()
+        : null;
+    const desiredJob =
+      typeof body.desiredJob === "string" && body.desiredJob.trim()
+        ? body.desiredJob.trim()
+        : profession;
+
     // Create user + candidate profile in a transaction
     const user = await db.user.create({
       data: {
@@ -63,8 +86,12 @@ export async function POST(req: NextRequest) {
             nationality: typeof body.nationality === "string" ? body.nationality : null,
             residenceCountry: typeof body.residenceCountry === "string" ? body.residenceCountry : null,
             city: typeof body.city === "string" ? body.city : null,
-            desiredJob: typeof body.desiredJob === "string" ? body.desiredJob : null,
+            desiredJob,
             sector: typeof body.sector === "string" ? body.sector : null,
+            profession,
+            educationLevel,
+            department,
+            preferredItalianRegion,
             italianLevel: validLevel(body.italianLevel),
           },
         },

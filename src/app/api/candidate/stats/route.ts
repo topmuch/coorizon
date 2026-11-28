@@ -83,7 +83,7 @@ export async function GET(_req: NextRequest): Promise<Response> {
   ] = await Promise.all([
     db.candidateProfile.findUnique({
       where: { userId },
-      select: { completionPct: true, italianLevel: true },
+      select: { completionPct: true, italianLevel: true, department: true, profession: true },
     }),
     db.candidateDocument.count({
       where: { candidateId: userId, status: DocumentStatus.Pending },
@@ -134,6 +134,8 @@ export async function GET(_req: NextRequest): Promise<Response> {
   const stats = {
     profileCompletion: profile?.completionPct ?? 0,
     italianLevel: italianLevel === null ? null : String(italianLevel),
+    department: profile?.department ?? null,
+    profession: profile?.profession ?? null,
     activeEnrollments,
     applicationsSent,
     applicationsInProgress,

@@ -8,6 +8,8 @@ import {
   Save,
   Loader2,
   AlertCircle,
+  Home,
+  Plane,
 } from "lucide-react";
 import {
   Card,
@@ -22,7 +24,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -32,6 +36,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import {
+  SENEGAL_REGIONS,
+  ITALIAN_REGIONS,
+  PROFESSION_GROUPS,
+  ALL_PROFESSIONS,
+  EDUCATION_LEVEL_OPTIONS,
+} from "@/lib/senegal-data";
 
 /**
  * CandidateProfile (LOT 3 — Task 3-b)
@@ -64,15 +75,7 @@ const SECTORS = [
   "Commerce & Services",
 ];
 
-const EDUCATION_LEVELS = [
-  "Élémentaire (CI → CM2, diplôme CFEE)",
-  "Moyen / Collège (6e → 3e, diplôme BFEM)",
-  "Secondaire / Lycée (Seconde → Terminale, diplôme Bac)",
-  "Formation professionnelle (CAP, BEP, BT)",
-  "Supérieur – Licence (Bac+3)",
-  "Supérieur – Master (Bac+5)",
-  "Supérieur – Doctorat (Bac+8)",
-];
+const EDUCATION_LEVELS = EDUCATION_LEVEL_OPTIONS;
 
 const ITALIAN_LEVELS = ["Aucun", "A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -98,6 +101,9 @@ interface ProfileFormState {
   desiredJob: string;
   sector: string;
   educationLevel: string;
+  profession: string;
+  department: string;
+  preferredItalianRegion: string;
   diplomas: string;
   experiences: string;
   skills: string;
@@ -119,6 +125,9 @@ const EMPTY_FORM: ProfileFormState = {
   desiredJob: "",
   sector: "",
   educationLevel: "",
+  profession: "",
+  department: "",
+  preferredItalianRegion: "",
   diplomas: "",
   experiences: "",
   skills: "",
@@ -144,6 +153,9 @@ interface ProfileResponse {
     desiredJob: string | null;
     sector: string | null;
     educationLevel: string | null;
+    profession: string | null;
+    department: string | null;
+    preferredItalianRegion: string | null;
     diplomas: string | null;
     experiences: string | null;
     skills: string | null;
@@ -168,6 +180,9 @@ function mapResponseToForm(data: ProfileResponse): ProfileFormState {
     desiredJob: data.profile.desiredJob ?? "",
     sector: data.profile.sector ?? "",
     educationLevel: data.profile.educationLevel ?? "",
+    profession: data.profile.profession ?? "",
+    department: data.profile.department ?? "",
+    preferredItalianRegion: data.profile.preferredItalianRegion ?? "",
     diplomas: data.profile.diplomas ?? "",
     experiences: data.profile.experiences ?? "",
     skills: data.profile.skills ?? "",
@@ -252,6 +267,9 @@ export function CandidateProfile() {
         desiredJob: form.desiredJob.trim(),
         sector: form.sector,
         educationLevel: form.educationLevel || null,
+        profession: form.profession || null,
+        department: form.department || null,
+        preferredItalianRegion: form.preferredItalianRegion || null,
         diplomas: form.diplomas.trim() || null,
         experiences: form.experiences.trim() || null,
         skills: form.skills.trim() || null,
@@ -521,6 +539,93 @@ export function CandidateProfile() {
                 </Select>
               </Field>
             </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Profession" htmlFor="profession">
+                <Select
+                  value={form.profession || undefined}
+                  onValueChange={(v) => set("profession", v)}
+                >
+                  <SelectTrigger id="profession" className="w-full">
+                    <SelectValue placeholder="Sélectionner…" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)]">
+                    {PROFESSION_GROUPS.map((g) => (
+                      <SelectGroup key={g.group}>
+                        <SelectLabel>{g.group}</SelectLabel>
+                        {g.professions.map((p) => (
+                          <SelectItem
+                            key={p}
+                            value={p}
+                            className="whitespace-normal text-left"
+                          >
+                            {p}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                    {form.profession &&
+                      !ALL_PROFESSIONS.includes(form.profession) && (
+                        <SelectItem
+                          value={form.profession}
+                          className="whitespace-normal text-left"
+                        >
+                          {form.profession} (ancienne valeur)
+                        </SelectItem>
+                      )}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field
+                label="Département (centre de formation)"
+                htmlFor="department"
+              >
+                <Select
+                  value={form.department || undefined}
+                  onValueChange={(v) => set("department", v)}
+                >
+                  <SelectTrigger id="department" className="w-full">
+                    <SelectValue placeholder="Sélectionner…" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)]">
+                    {SENEGAL_REGIONS.map((r) => (
+                      <SelectGroup key={r.region}>
+                        <SelectLabel>Région de {r.region}</SelectLabel>
+                        {r.departments.map((d) => (
+                          <SelectItem key={d} value={d}>
+                            {d}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <Field
+              label="Région italienne souhaitée"
+              htmlFor="preferredItalianRegion"
+            >
+              <Select
+                value={form.preferredItalianRegion || undefined}
+                onValueChange={(v) => set("preferredItalianRegion", v)}
+              >
+                <SelectTrigger
+                  id="preferredItalianRegion"
+                  className="w-full"
+                >
+                  <SelectValue placeholder="Dans quelle région italienne souhaitez-vous travailler ?" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-2rem)]">
+                  {ITALIAN_REGIONS.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
             <Separator />
 
