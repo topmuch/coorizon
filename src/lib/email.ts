@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   getPlatformSettings,
   type NotificationConfig,
+  type SmtpConfig,
 } from "@/lib/platform-settings";
 
 /**
@@ -12,10 +13,11 @@ import {
  * audit what was sent (see the "Emails & notifications" settings card).
  *
  * Delivery:
- *  - If SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS environment variables
- *    are configured, emails are actually delivered through nodemailer.
- *  - Otherwise the email is recorded with provider "log" (simulated sending)
- *    so the flow stays testable without SMTP credentials.
+ *  - SMTP credentials are configured from the SuperAdmin settings ( Paramètres
+ *    > Serveur SMTP ). They take priority over the legacy SMTP_* environment
+ *    variables.
+ *  - If neither is configured, the email is recorded with provider "log"
+ *    (simulated sending) so the flow stays testable without SMTP credentials.
  *
  * Sending is non-blocking and never throws: notification failures must not
  * break the main operation (registration, payment, messaging…).
@@ -51,27 +53,63 @@ const TEMPLATE_SWITCH: Record<EmailTemplate, keyof NotificationConfig> = {
   forfait: "emailPayment",
 };
 
-function smtpConfigured(): boolean {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_PORT);
+function envSmtpConfig(): SmtpConfig {
+  return {
+    host: process.env.SMTP_HOST ?? "",
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === "true",
+    username: process.env.SMTP_USER ?? "",
+    password: process.env.SMTP_PASS ?? "",
+    fromName: "COORIZON",
+    fromEmail: process.env.SMTP_FROM_EMAIL ?? "no-reply@coorizon.com",
+  };
 }
 
-async function deliver(input: SendEmailInput): Promise<{ provider: "smtp" | "log"; error?: string }> {
-  if (!smtpConfigured()) {
+/** Active SMTP config: SuperAdmin settings first, env vars as legacy fallback. */
+export async function getActiveSmtpConfig(): Promise<SmtpConfig> {
+  try {
+    const settings = await getPlatformSettings();
+    if (settings.smtp.host) return settings.smtp;
+  } catch {
+    // Fall through to env config.
+  }
+  return envSmtpConfig();
+}
+
+export function isSmtpConfigured(cfg: SmtpConfig): boolean {
+  return Boolean(cfg.host);
+}
+
+export async function smtpConfigured(): Promise<boolean> {
+  return isSmtpConfigured(await getActiveSmtpConfig());
+}
+
+export function buildFromLine(cfg: SmtpConfig): string {
+  const name = cfg.fromName || "COORIZON";
+  const email = cfg.fromEmail || "no-reply@coorizon.com";
+  return `${name} <${email}>`;
+}
+
+async function deliver(
+  cfg: SmtpConfig,
+  input: SendEmailInput
+): Promise<{ provider: "smtp" | "log"; error?: string }> {
+  if (!isSmtpConfigured(cfg)) {
     // No SMTP credentials: simulated sending (recorded in the journal).
     return { provider: "log" };
   }
   try {
     const transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === "true",
+      host: cfg.host,
+      port: cfg.port || 587,
+      secure: cfg.secure,
       auth:
-        process.env.SMTP_USER && process.env.SMTP_PASS
-          ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        cfg.username && cfg.password
+          ? { user: cfg.username, pass: cfg.password }
           : undefined,
     });
     await transport.sendMail({
-      from: process.env.SMTP_FROM ?? "COORIZON <no-reply@coorizon.com>",
+      from: buildFromLine(cfg),
       to: input.to,
       subject: input.subject,
       text: input.body,
@@ -114,7 +152,8 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       return { ok: false, skipped: true };
     }
 
-    const { provider, error } = await deliver(input);
+    const cfg = await getActiveSmtpConfig();
+    const { provider, error } = await deliver(cfg, input);
     await db.emailLog
       .create({
         data: {

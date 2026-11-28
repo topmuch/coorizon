@@ -32,3 +32,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ roleDisabled: false });
   }
 }
+
+/**
+ * GET /api/auth/check-login
+ *
+ * Public: returns the list of connection profiles currently disabled
+ * platform-wide. Used by the login pages to grey out / block the
+ * corresponding spaces in real time.
+ */
+export async function GET() {
+  try {
+    const settings = await getPlatformSettings();
+    return NextResponse.json({ disabledRoles: settings.disabledRoles });
+  } catch {
+    return NextResponse.json({ disabledRoles: [] });
+  }
+}

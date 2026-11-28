@@ -19,6 +19,7 @@ import {
   Activity,
   Compass,
   Headset,
+  Ban,
 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -222,10 +223,46 @@ export function AuthSplitLayout({
   );
 }
 
+// ─── Disabled profiles (real-time from platform settings) ──────────────────
+
+/**
+ * Fetch the connection profiles disabled platform-wide by the SuperAdmin.
+ * The list drives the login hub (greyed cards) and each dedicated login page
+ * (blocked form) so deactivated profiles are never usable from the UI.
+ */
+function useDisabledRoles(): string[] {
+  const [disabledRoles, setDisabledRoles] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/check-login", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d && Array.isArray(d.disabledRoles)) {
+          setDisabledRoles(d.disabledRoles as string[]);
+        }
+      })
+      .catch(() => {
+        // Best effort: if the endpoint is unreachable, keep profiles enabled.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return disabledRoles;
+}
+
+function isProfileDisabled(disabledRoles: string[], profileRoles: string[]): boolean {
+  return (
+    profileRoles.length > 0 &&
+    profileRoles.every((r) => disabledRoles.includes(r))
+  );
+}
+
 // ─── Multi-role Login Page (default hub) ────────────────────────────────────
 
 export function LoginPage() {
   const { navigate } = useSiteRouter();
+  const disabledRoles = useDisabledRoles();
 
   const roles = [
     {
@@ -235,6 +272,7 @@ export function LoginPage() {
       icon: User,
       route: "login-candidate" as const,
       reserved: false,
+      profileRoles: ["Candidate"],
     },
     {
       id: "recruiter",
@@ -243,6 +281,7 @@ export function LoginPage() {
       icon: Briefcase,
       route: "login-recruiter" as const,
       reserved: false,
+      profileRoles: ["Recruiter"],
     },
     {
       id: "trainer",
@@ -251,6 +290,7 @@ export function LoginPage() {
       icon: GraduationCap,
       route: "login-trainer" as const,
       reserved: false,
+      profileRoles: ["Trainer"],
     },
     {
       id: "agent",
@@ -259,6 +299,7 @@ export function LoginPage() {
       icon: Plane,
       route: "login-agent" as const,
       reserved: false,
+      profileRoles: ["RecruitmentAgent", "ImmigrationAgent"],
     },
     {
       id: "admin",
@@ -267,6 +308,7 @@ export function LoginPage() {
       icon: ShieldCheck,
       route: "login-admin" as const,
       reserved: true,
+      profileRoles: [] as string[],
     },
   ];
 
@@ -308,8 +350,9 @@ export function LoginPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {roles.map((role) =>
-          role.reserved ? (
+        {roles.map((role) => {
+          const disabled = isProfileDisabled(disabledRoles, role.profileRoles);
+          return role.reserved ? (
             <button
               key={role.id}
               onClick={() => navigate(role.route)}
@@ -333,25 +376,52 @@ export function LoginPage() {
           ) : (
             <button
               key={role.id}
-              onClick={() => navigate(role.route)}
-              className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-brand/40 hover:shadow-md"
+              onClick={() => {
+                if (!disabled) navigate(role.route);
+              }}
+              aria-disabled={disabled}
+              className={[
+                "group flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all",
+                disabled
+                  ? "cursor-not-allowed border-amber-300 bg-amber-50/60 opacity-70 dark:border-amber-500/30 dark:bg-amber-500/5"
+                  : "border-border bg-card hover:border-brand/40 hover:shadow-md",
+              ].join(" ")}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                <role.icon className="h-5 w-5" />
+              <span className="flex w-full items-center justify-between gap-2">
+                <span
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                    disabled ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-brand/10 text-brand"
+                  }`}
+                >
+                  <role.icon className="h-5 w-5" />
+                </span>
+                {disabled && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300">
+                    <Ban className="h-2.5 w-2.5" />
+                    Désactivé
+                  </span>
+                )}
               </span>
               <span>
                 <span className="text-sm font-semibold text-navy">{role.title}</span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
                   {role.description}
                 </span>
+                {disabled && (
+                  <span className="mt-1 block text-xs font-medium text-amber-700 dark:text-amber-400">
+                    Connexions désactivées par l'administration.
+                  </span>
+                )}
               </span>
-              <span className="mt-1 inline-flex items-center text-xs font-medium text-brand">
-                Se connecter
-                <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-              </span>
+              {!disabled && (
+                <span className="mt-1 inline-flex items-center text-xs font-medium text-brand">
+                  Se connecter
+                  <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              )}
             </button>
-          )
-        )}
+          );
+        })}
       </div>
 
       <div className="mt-6 rounded-lg border border-dashed border-border bg-surface/60 p-3 text-center text-xs text-muted-foreground">
@@ -579,6 +649,8 @@ function RoleLoginPage({
   const { navigate } = useSiteRouter();
   const { toast } = useToast();
   const { refresh, signOut } = useSession();
+  const disabledRoles = useDisabledRoles();
+  const profileDisabled = isProfileDisabled(disabledRoles, expectedRoles);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPwd, setShowPwd] = React.useState(false);
@@ -593,6 +665,7 @@ function RoleLoginPage({
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (profileDisabled) return;
     setError(null);
     if (!email || !password) {
       setError("Veuillez renseigner votre email et votre mot de passe.");
@@ -689,6 +762,17 @@ function RoleLoginPage({
         <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
       </div>
 
+      {profileDisabled && (
+        <Alert className="mt-4 border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+          <Ban className="h-4 w-4" />
+          <AlertDescription>
+            Les connexions pour le profil « {roleLabel} » sont actuellement désactivées par
+            l'administration COORIZON. Réessayez plus tard ou contactez le support si vous
+            pensez qu'il s'agit d'une erreur.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         {error && (
           <Alert variant="destructive">
@@ -744,9 +828,17 @@ function RoleLoginPage({
             Se souvenir de moi
           </Label>
         </div>
-        <Button type="submit" className="w-full bg-brand hover:bg-brand/90" disabled={loading}>
-          {loading ? "Connexion…" : "Se connecter"}
-          {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
+        <Button
+          type="submit"
+          className="w-full bg-brand hover:bg-brand/90"
+          disabled={loading || profileDisabled}
+        >
+          {profileDisabled
+            ? "Connexions désactivées"
+            : loading
+            ? "Connexion…"
+            : "Se connecter"}
+          {!loading && !profileDisabled && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </form>
 

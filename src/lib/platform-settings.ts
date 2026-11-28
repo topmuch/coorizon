@@ -43,7 +43,35 @@ export interface PlatformSettings {
   forfait: ForfaitConfig;
   /** Email & notification switches. */
   notifications: NotificationConfig;
+  /** SMTP server used to deliver the notification emails. */
+  smtp: SmtpConfig;
 }
+
+/**
+ * SMTP configuration edited from the SuperAdmin settings.
+ * Empty `host` means "no SMTP configured" — emails are then only recorded
+ * in the EmailLog journal (simulated sending).
+ */
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  /** true = implicit TLS (port 465). false = STARTTLS (587) when available. */
+  secure: boolean;
+  username: string;
+  password: string;
+  fromName: string;
+  fromEmail: string;
+}
+
+export const DEFAULT_SMTP: SmtpConfig = {
+  host: process.env.SMTP_HOST ?? "",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === "true",
+  username: process.env.SMTP_USER ?? "",
+  password: process.env.SMTP_PASS ?? "",
+  fromName: "COORIZON",
+  fromEmail: process.env.SMTP_FROM_EMAIL ?? "no-reply@coorizon.com",
+};
 
 export const DEFAULT_FORFAIT: ForfaitConfig = {
   name: "Forfait Formation COORIZON",
@@ -67,6 +95,7 @@ const DEFAULTS: PlatformSettings = {
   disabledRoles: [],
   forfait: DEFAULT_FORFAIT,
   notifications: DEFAULT_NOTIFICATIONS,
+  smtp: { ...DEFAULT_SMTP },
 };
 
 function sanitize(raw: unknown): PlatformSettings {
@@ -115,6 +144,24 @@ function sanitize(raw: unknown): PlatformSettings {
           : DEFAULT_NOTIFICATIONS.alertRecipient,
     };
   }
+  if (obj.smtp && typeof obj.smtp === "object") {
+    const s = obj.smtp as Partial<SmtpConfig>;
+    const str = (v: unknown, fallback: string) =>
+      typeof v === "string" && v.trim() ? v.trim() : fallback;
+    const port =
+      typeof s.port === "number" && Number.isFinite(s.port) && s.port > 0 && s.port <= 65535
+        ? Math.round(s.port)
+        : DEFAULT_SMTP.port;
+    base.smtp = {
+      host: str(s.host, DEFAULT_SMTP.host),
+      port,
+      secure: typeof s.secure === "boolean" ? s.secure : DEFAULT_SMTP.secure,
+      username: str(s.username, ""),
+      password: typeof s.password === "string" ? s.password : "",
+      fromName: str(s.fromName, DEFAULT_SMTP.fromName),
+      fromEmail: str(s.fromEmail, DEFAULT_SMTP.fromEmail),
+    };
+  }
   return base;
 }
 
@@ -131,6 +178,7 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     ...DEFAULTS,
     forfait: { ...DEFAULT_FORFAIT },
     notifications: { ...DEFAULT_NOTIFICATIONS },
+    smtp: { ...DEFAULT_SMTP },
   };
 }
 
@@ -140,6 +188,7 @@ export async function updatePlatformSettings(patch: Partial<PlatformSettings>): 
     disabledRoles: patch.disabledRoles ?? current.disabledRoles,
     forfait: { ...current.forfait, ...(patch.forfait ?? {}) },
     notifications: { ...current.notifications, ...(patch.notifications ?? {}) },
+    smtp: { ...current.smtp, ...(patch.smtp ?? {}) },
   });
   const content = JSON.stringify(next);
   const existing = await db.cMSPage.findUnique({ where: { slug: SETTINGS_SLUG } });

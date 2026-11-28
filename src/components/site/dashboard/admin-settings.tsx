@@ -19,6 +19,7 @@ import {
   Loader2,
   AlertCircle,
   MessageCircle,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -312,6 +313,9 @@ export function AdminSettings() {
 
       {/* Connection profiles access (Admin & SuperAdmin) */}
       <RoleAccessCard />
+
+      {/* SMTP server (SuperAdmin settings) */}
+      <SmtpSettingsCard />
 
       {/* Emails & notifications (Admin & SuperAdmin) */}
       <NotificationSettingsCard />
@@ -799,7 +803,7 @@ function NotificationSettingsCard() {
                     </ul>
                   )}
                   <p className="text-[11px] text-muted-foreground">
-                    Les emails sont envoyés via SMTP si les variables SMTP_HOST/SMTP_PORT sont configurées, sinon ils sont enregistrés dans ce journal (envoi simulé).
+                    Les emails partent via le serveur SMTP configuré ci-dessus (Paramètres &gt; Serveur SMTP). Sans serveur configuré, ils sont uniquement enregistrés dans ce journal (envoi simulé).
                   </p>
                 </div>
               )}
@@ -832,6 +836,309 @@ function NotificationSwitch({
       </div>
       <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={label} />
     </li>
+  );
+}
+
+// ─── SMTP server settings card ──────────────────────────────────────────────
+
+interface SmtpSettings {
+  host: string;
+  port: number;
+  secure: boolean;
+  username: string;
+  fromName: string;
+  fromEmail: string;
+  hasPassword: boolean;
+}
+
+/**
+ * SMTP server configuration (SuperAdmin settings).
+ * The saved configuration drives every notification email (inscriptions,
+ * paiements, messagerie, alertes admin) — with the legacy SMTP_* environment
+ * variables as fallback when no host is stored.
+ */
+function SmtpSettingsCard() {
+  const { toast } = useToast();
+  const [form, setForm] = React.useState<SmtpSettings>({
+    host: "",
+    port: 587,
+    secure: false,
+    username: "",
+    fromName: "COORIZON",
+    fromEmail: "no-reply@coorizon.com",
+    hasPassword: false,
+  });
+  const [password, setPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+  const [testTo, setTestTo] = React.useState("");
+  const [testing, setTesting] = React.useState(false);
+  const [active, setActive] = React.useState(false);
+
+  const fetchSmtp = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/settings/smtp", { credentials: "include" });
+      if (!res.ok) throw new Error("Échec du chargement du serveur SMTP.");
+      const data = (await res.json()) as { smtp: SmtpSettings; active: boolean };
+      setForm(data.smtp);
+      setActive(Boolean(data.active));
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  React.useEffect(() => {
+    void fetchSmtp();
+  }, [fetchSmtp]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/smtp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...form, password }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        smtp?: SmtpSettings;
+        active?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.smtp) throw new Error(data.error || "Échec de la sauvegarde.");
+      setForm(data.smtp);
+      setActive(Boolean(data.active));
+      setPassword("");
+      toast({
+        title: "Serveur SMTP enregistré",
+        description: data.active
+          ? "Les emails de notification partiront via ce serveur."
+          : "Hôte vide : les emails restent enregistrés dans le journal (envoi simulé).",
+      });
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    if (!testTo.trim()) {
+      toast({
+        title: "Email requis",
+        description: "Renseignez l'adresse destinataire du test.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTesting(true);
+    try {
+      const res = await fetch("/api/admin/settings/smtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ to: testTo.trim() }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Échec de l'envoi du test.");
+      }
+      toast({
+        title: "Email de test envoyé",
+        description: `Vérifiez la boîte de ${testTo.trim()}. L'envoi figure aussi dans le journal des emails.`,
+      });
+    } catch (e) {
+      toast({
+        title: "Échec du test SMTP",
+        description: e instanceof Error ? e.message : "Une erreur est survenue.",
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2 text-navy">
+          <Server className="h-5 w-5 text-brand" />
+          Serveur SMTP
+          {!loading && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] font-semibold uppercase tracking-wide",
+                active
+                  ? "border-brand-green/40 bg-brand-green/10 text-brand-green"
+                  : "border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+              )}
+            >
+              {active ? "Configuré" : "Non configuré"}
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          Paramétrez le serveur d&apos;envoi des emails (inscriptions, paiements, messagerie,
+          alertes). Sans serveur configuré, les emails sont seulement enregistrés dans le
+          journal des emails.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="smtp-host" className="text-xs">
+                  Hôte SMTP
+                </Label>
+                <Input
+                  id="smtp-host"
+                  placeholder="smtp.gmail.com"
+                  value={form.host}
+                  onChange={(e) => setForm({ ...form, host: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="smtp-port" className="text-xs">
+                  Port
+                </Label>
+                <Input
+                  id="smtp-port"
+                  type="number"
+                  min={1}
+                  max={65535}
+                  value={form.port}
+                  onChange={(e) =>
+                    setForm({ ...form, port: Number(e.target.value) || 587 })
+                  }
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <NotificationSwitch
+              label="TLS sécurisé (SSL implicite)"
+              description="Activé pour le port 465. Désactivé pour STARTTLS (587) ou port non chiffré."
+              checked={form.secure}
+              onCheckedChange={(v) => setForm({ ...form, secure: v })}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="smtp-user" className="text-xs">
+                  Nom d&apos;utilisateur
+                </Label>
+                <Input
+                  id="smtp-user"
+                  placeholder="no-reply@coorizon.com"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  className="h-9"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="smtp-pass" className="text-xs">
+                  Mot de passe {form.hasPassword && "(déjà enregistré)"}
+                </Label>
+                <Input
+                  id="smtp-pass"
+                  type="password"
+                  placeholder={form.hasPassword ? "•••••••• (inchangé)" : "Mot de passe SMTP"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-9"
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="smtp-from-name" className="text-xs">
+                  Nom de l&apos;expéditeur
+                </Label>
+                <Input
+                  id="smtp-from-name"
+                  placeholder="COORIZON"
+                  value={form.fromName}
+                  onChange={(e) => setForm({ ...form, fromName: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="smtp-from-email" className="text-xs">
+                  Email de l&apos;expéditeur
+                </Label>
+                <Input
+                  id="smtp-from-email"
+                  type="email"
+                  placeholder="no-reply@coorizon.com"
+                  value={form.fromEmail}
+                  onChange={(e) => setForm({ ...form, fromEmail: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={() => void handleSave()} disabled={saving} className="bg-brand hover:bg-brand/90">
+                {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
+                Enregistrer la configuration
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Test email */}
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="space-y-1.5">
+                <Label htmlFor="smtp-test-to" className="text-xs">
+                  Email de test (vérifier la configuration)
+                </Label>
+                <Input
+                  id="smtp-test-to"
+                  type="email"
+                  placeholder="vous@exemple.com"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void handleTest()}
+                disabled={testing || !form.host.trim()}
+                title={!form.host.trim() ? "Configurez d'abord l'hôte SMTP" : undefined}
+              >
+                {testing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}
+                Envoyer un email de test
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

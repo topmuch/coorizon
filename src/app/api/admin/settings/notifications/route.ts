@@ -8,6 +8,7 @@ import {
   type NotificationConfig,
 } from "@/lib/platform-settings";
 import { audit } from "@/lib/auth/audit";
+import { smtpConfigured } from "@/lib/email";
 
 /**
  * GET /api/admin/settings/notifications
@@ -21,7 +22,7 @@ export async function GET() {
       return Response.json({ error: "Accès réservé aux administrateurs." }, { status: 403 });
     }
     const settings = await getPlatformSettings();
-    return Response.json({ notifications: settings.notifications, smtpConfigured: Boolean(process.env.SMTP_HOST) });
+    return Response.json({ notifications: settings.notifications, smtpConfigured: await smtpConfigured() });
   } catch (error) {
     return authErrorResponse(error);
   }
